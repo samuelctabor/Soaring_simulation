@@ -31,7 +31,7 @@ classdef GaussianThermal
             %localgradient(1,1) = (func(posx+delta,posy)-func(posx-delta,posy))/(2*delta);
             %localgradient(2,1) = (func(posx,posy+delta)-func(posx,posy-delta))/(2*delta);
             %Note that these gradient equations assume x-axis north,
-            %y-axis east, yaw_corr north = 0° and east = 90°
+            %y-axis east, yaw_corr north = 0deg and east = 90deg
             yaw_corr = -(yaw-deg2rad(90));
             r = sqrt((GT.thermalx-posx)^2+(GT.thermaly-posy)^2);
             sinAngle = (cos(yaw_corr)*(GT.thermalx-posx) - sin(yaw_corr)*(GT.thermaly-posy)) / r;

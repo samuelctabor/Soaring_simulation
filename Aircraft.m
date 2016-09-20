@@ -36,8 +36,8 @@ classdef Aircraft < handle
             obj.name=name;
             r=1.0; %Variance of measurement
             obj.controller=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,@obj.print);
-            obj.updraftsensor = Variometer(variables.measurement_noise);
-            obj.gradientsensor = RollMomentSensor(variables.measurement_noise_z2);
+            obj.updraftsensor = Variometer(variables.actual_noise);
+            obj.gradientsensor = RollMomentSensor(variables.actual_noise_z2);
             
             obj.posx=posx;
             obj.posy=posy;
@@ -75,7 +75,7 @@ classdef Aircraft < handle
             obj.updraftsensor.update(z_R);
             obj.gradientsensor.update(z_L);
             
-            measurements=[obj.updraftsensor.estimated_updraft];
+            measurements=[obj.updraftsensor.estimated_updraft obj.gradientsensor.estimated_roll_moment];
             
             obj.controller.update(measurements,obj.posx,obj.posy,obj.posz,obj.pathangle,obj.V,time);
             %Update history

@@ -42,8 +42,11 @@ classdef Simulation < handle
             variables.ceiling =                     400;
             variables.begin_search_altitude =       -0;
             variables.filter_rate           =       10;
+            variables.actual_noise          =       0.0;
+            variables.actual_noise_z2       =       0.0;
             variables.measurement_noise     =       0.0;%0.5; %TODO This should be the covariance. Is it?
-            variables.measurement_noise_z2  =       0.0;%0.4; %TODO This should be the covariance. Is it?
+            variables.measurement_noise_z2  =       10000.0;%0.4; %TODO This should be the covariance. Is it?
+            
             variables.thermalling_radius =          20;
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
             % turnrate = (g/V)*tan(phi)

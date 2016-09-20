@@ -100,10 +100,11 @@ classdef FlightController < handle
             max_turnrate = 9.81*this.V*tan(deg2rad(60));
             this.heading_controller = Heading_Controller(variables.k_p,variables.k_d,variables.k_i,max_turnrate);
             this.search_centre = [posx,posy+(5)];
+            
             %---------------------%
             %----Set up ekf-------%
             n=4;
-            m=1;
+            m=2;
             x=[5;15;-5;0];                                   % inital state estimate
             P = diag([1 10 100 100]);    %Initial state unknown so large variance
             
@@ -111,9 +112,10 @@ classdef FlightController < handle
             q = q*50/variables.filter_rate;
             
             %r=0.1;    %std of measurement
-            r=variables.measurement_noise;   
             Q=q^2*eye(n); % covariance of process
-            R=r^2*eye(m);% covariance of measurement
+            R=zeros(m,m);
+            R(1,1) = variables.measurement_noise^2;
+            R(2,2) = variables.measurement_noise_z2^2;
             
             this.ekf=ExtendedKalmanFilter_thermal(P,x,Q,R);
             %obj.ekf=ExtendedKalmanFilter_arduino(P,x,Q,R);
@@ -148,7 +150,7 @@ classdef FlightController < handle
                 if (mod(this.filter_iterations,this.filter_skips)==0)
                 %if 1 %((mod(this.current_time,0.1)<1e-6)||(mod(this.current_time,0.1)>0.099))
                     %this.ekf.update(measurements,V*this.deltaT*cos(this.pathangleold),V*this.deltaT*sin(this.pathangleold));
-                    this.ekf.update(measurements,this.posx-this.prev_posx,this.posy-this.prev_posy);
+                    this.ekf.update(measurements,this.posx-this.prev_posx,this.posy-this.prev_posy,pathangle,this.variables.roll_param);
                     this.prev_posx = this.posx;
                     this.prev_posy = this.posy;
                     this.prev_posz = this.posz;
