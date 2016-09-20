@@ -100,6 +100,7 @@ classdef FlightController < handle
             max_turnrate = 9.81*this.V*tan(deg2rad(60));
             this.heading_controller = Heading_Controller(variables.k_p,variables.k_d,variables.k_i,max_turnrate);
             this.search_centre = [posx,posy+(5)];
+            this.est_thermal_pos = [0,0];
             
             %---------------------%
             %----Set up ekf-------%
@@ -154,15 +155,15 @@ classdef FlightController < handle
                     this.prev_posx = this.posx;
                     this.prev_posy = this.posy;
                     this.prev_posz = this.posz;
+                    
+                    %Estimated global position of thermal
+                    this.est_thermal_pos = [posx+this.ekf.x(3),posy+this.ekf.x(4)];
                 end
                 %obj.print(sprintf('Cov %f %f %f %f',obj.ekf.P(1,1),obj.ekf.P(2,2),obj.ekf.P(3,3),obj.ekf.P(4,4)));
                 this.filter_iterations = this.filter_iterations+1;
             end
             %Estimate the climb we can achieve
             this.thermalability=this.calc_thermalability(this.ekf.x,this.variables.thermalling_radius);
-            
-            %Estimated global position of thermal
-            this.est_thermal_pos = [posx+this.ekf.x(3),posy+this.ekf.x(4)];
             
             %Distance to next waypoint
             this.distance_to_next_wp = norm([posx-this.Waypoints(this.currentWaypoint,1),posy-this.Waypoints(this.currentWaypoint,2)]);
