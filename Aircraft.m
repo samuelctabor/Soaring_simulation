@@ -7,6 +7,7 @@ classdef Aircraft < handle
         turnrate;
         pathangle;
         V;
+        roll_param;
         controller;
         gradientsensor;
         updraftsensor;
@@ -36,6 +37,7 @@ classdef Aircraft < handle
             r=1.0; %Variance of measurement
             obj.controller=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,@obj.print);
             obj.updraftsensor = Variometer(variables.measurement_noise);
+            obj.gradientsensor = RollMomentSensor(variables.measurement_noise_z2);
             
             obj.posx=posx;
             obj.posy=posy;
@@ -47,6 +49,8 @@ classdef Aircraft < handle
             obj.vx = V*cos(pathangle);
             obj.vy = V*sin(pathangle);
             obj.vz=obj.sinkrate;
+            
+            obj.roll_param = variables.roll_param;
             
             obj.pHistory=[posx,posy,posz];
             obj.vHistory=[obj.vx,obj.vy,obj.vz];
@@ -65,10 +69,13 @@ classdef Aircraft < handle
             %fprintf('deltaT:\n');
             deltaT=time-obj.previous_time;
             %Compute measurements
-            [z_R,~]=obj.environment.ExactMeasurement(obj.posx,obj.posy);
+            [z_R,z_L]=obj.environment.ExactMeasurement(obj.posx,obj.posy,obj.pathangle); %TODO Pathangle for now, but this is wrong, should be yaw -> Add
+            roll = 0; %Assume zero roll angle for now
+            z_L = z_L * cos(roll) * obj.roll_param; %Adapt exact measurement with aircraft specific parameters
             obj.updraftsensor.update(z_R);
+            obj.gradientsensor.update(z_L);
             
-            measurements=[obj.updraftsensor.estimated_updraft];%
+            measurements=[obj.updraftsensor.estimated_updraft];
             
             obj.controller.update(measurements,obj.posx,obj.posy,obj.posz,obj.pathangle,obj.V,time);
             %Update history
@@ -112,8 +119,8 @@ classdef Aircraft < handle
             end
             
             obj.h_map=Aircraft.display_map(axis,obj.controller.map);
-            
-            obj.h_label = text(obj.posx+10,obj.posy,obj.posz,sprintf('%s \nHeight %3.1f m \nVertical Velocity: %2.2f',obj.name, obj.posz, obj.vz));
+                        
+            obj.h_label = text(obj.posx+10,obj.posy,obj.posz,sprintf('%s \nx,y:%3.0f/%3.0f m \nHeight %3.1f m \nVertical Velocity: %2.2f \nPA_cor: %3.1f deg\nz1: %2.2f m/s \nz2: %1.3f Nm \n',obj.name, obj.posx, obj.posy,obj.posz, obj.vz, -rad2deg(obj.pathangle-deg2rad(90)), obj.updraftsensor.estimated_updraft, obj.gradientsensor.estimated_roll_moment));
         end
         function print(obj, message)
             fprintf('%s: %s\n',obj.name,message);

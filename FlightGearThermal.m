@@ -22,7 +22,7 @@ classdef FlightGearThermal
                 GT.radius  =double(varargin{4});
             end
         end
-        function [z, localgradient]=ExactMeasurement(GT,posx,posy)
+        function [z, localgradient]=ExactMeasurement(GT,posx,posy,yaw)
             %Return the updraft at specified location
             %func=@(posx,posy)GT.strength*exp(-((GT.thermalx-posx)^2+(GT.thermaly-posy)^2)/GT.radius^2);
             %z=func(posx,posy);
@@ -50,7 +50,7 @@ classdef FlightGearThermal
             end
             
             
-            localgradient = [0;0];
+            localgradient = 0;
         end
         function h=Display(GT,axis)
             %Unused

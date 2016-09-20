@@ -22,7 +22,7 @@ classdef GaussianThermal
                 GT.radius  =double(varargin{4});
             end
         end
-        function [z, localgradient]=ExactMeasurement(GT,posx,posy)
+        function [z, localgradient]=ExactMeasurement(GT,posx,posy,yaw)
             %Return the updraft at specified location
             %func=@(posx,posy)GT.strength*exp(-((GT.thermalx-posx)^2+(GT.thermaly-posy)^2)/GT.radius^2);
             %z=func(posx,posy);
@@ -30,7 +30,12 @@ classdef GaussianThermal
             delta=0.1;
             %localgradient(1,1) = (func(posx+delta,posy)-func(posx-delta,posy))/(2*delta);
             %localgradient(2,1) = (func(posx,posy+delta)-func(posx,posy-delta))/(2*delta);
-            localgradient = [0;0];
+            %Note that these gradient equations assume x-axis north,
+            %y-axis east, yaw_corr north = 0° and east = 90°
+            yaw_corr = -(yaw-deg2rad(90));
+            r = sqrt((GT.thermalx-posx)^2+(GT.thermaly-posy)^2);
+            sinAngle = (cos(yaw_corr)*(GT.thermalx-posx) - sin(yaw_corr)*(GT.thermaly-posy)) / r;
+            localgradient = -2.0 * r * z / GT.radius^2 * sinAngle; 
         end
         function h=Display(GT,axis)  
             %Unused

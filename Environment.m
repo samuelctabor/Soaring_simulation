@@ -43,13 +43,13 @@ classdef Environment < handle
             obj.mass_cons_correction = -1*mean(mean(obj.z));
             obj.Display(plot_axis);
         end
-        function [w,grad]=ExactMeasurement(env,x,y)
+        function [w,grad]=ExactMeasurement(env,x,y,yaw)
            w=0;
-           grad=[0;0];
+           grad=0;
            for i=1:length(env.Thermals)
                %x;
                %y;
-               [wi,gradi]=env.Thermals{i}.ExactMeasurement(x,y);
+               [wi,gradi]=env.Thermals{i}.ExactMeasurement(x,y,yaw);
                w=w+wi;
                grad=grad+gradi;
            end
@@ -71,7 +71,7 @@ classdef Environment < handle
             fprintf('Building grid')
             for i=1:size(x,1)
                 for j=1:size(x,2)
-                    z(i,j)=env.ExactMeasurement(x(i,j),y(i,j));
+                    z(i,j)=env.ExactMeasurement(x(i,j),y(i,j),0);
                 end
                 fprintf('.');
             end
