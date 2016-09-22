@@ -145,13 +145,13 @@ classdef FlightController < handle
             this.V = V;
             
             %Update the Kalman filter
-            
             if this.sm.state==StateMachine.thermalling
                 % Try 10HZ
                 if (mod(this.filter_iterations,this.filter_skips)==0)
                 %if 1 %((mod(this.current_time,0.1)<1e-6)||(mod(this.current_time,0.1)>0.099))
                     %this.ekf.update(measurements,V*this.deltaT*cos(this.pathangleold),V*this.deltaT*sin(this.pathangleold));
                     this.ekf.update(measurements,this.posx-this.prev_posx,this.posy-this.prev_posy,pathangle,this.variables.roll_param);
+
                     this.prev_posx = this.posx;
                     this.prev_posy = this.posy;
                     this.prev_posz = this.posz;

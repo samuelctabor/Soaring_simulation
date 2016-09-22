@@ -22,7 +22,7 @@ function varargout = GUI(varargin)
 
 % Edit the above text to modify the response to help GUI
 
-% Last Modified by GUIDE v2.5 17-Mar-2013 19:10:15
+% Last Modified by GUIDE v2.5 21-Sep-2016 16:03:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -133,7 +133,7 @@ guidata(hObject, handles);
 
 function update(timerObj,event,hObject,handles)
 handles=guidata(hObject);
-handles.simulation.Update(0.02);
+handles.simulation.Update(handles.mytimer.Period);
 %fprintf('%f\n',timerObj.Period);
 drawnow;
 % Update handles structure
@@ -227,3 +227,68 @@ if ~isnan(variable_value)
         handles.simulation.TheAircraft(i).controller.update_variable(variable_name,variable_value);
     end
 end
+
+
+% --- Executes on button press in plotbutton.
+function plotbutton_Callback(hObject, eventdata, handles)
+% hObject    handle to plotbutton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%close all
+
+data = handles.simulation.TheAircraft(1).History;
+
+%Define the "ground truth" or real thermal values here!
+W_real = 3;
+R_real = 50;
+x_real = 0;
+y_real = 0;
+
+h_margin = 0.1;
+v_margin = 0.05;
+
+%3D positions and thermal estimates?
+figure('Name','3D Pos');
+plot3(data.p(:,1),data.p(:,2),data.p(:,3));
+hold all
+plot3(data.ekf.x_xy_glob(:,1), data.ekf.x_xy_glob(:,2), zeros(size(data.ekf.x_xy_glob(:,2))));
+legend('Airplane pos','Estimated Thermal Pos');
+contour(handles.simulation.environment.x,handles.simulation.environment.y,handles.simulation.environment.z);
+xlabel('x');
+ylabel('y');
+zlabel('z');
+
+%States and measurements
+figure('Name','States');
+ax(1) = subplot_tight(4,1,1,[v_margin h_margin]);
+yyaxis left ; plot(data.t,[data.ekf.x(:,1) W_real*ones(size(data.ekf.x(:,1)))]);
+yyaxis right ; plot(data.t,[data.ekf.x(:,2) R_real*ones(size(data.ekf.x(:,1)))]);
+legend('W_{est}','W_{real}','R_{est}','R_{real}');
+ax(end+1) = subplot_tight(4,1,2,[v_margin h_margin]);
+yyaxis left ; plot(data.t,data.ekf.x(:,3));
+yyaxis right ; plot(data.t,data.ekf.x(:,4));
+legend('x_{est,local}','y_{est,local}');
+ax(end+1) = subplot_tight(4,1,3,[v_margin h_margin]);
+yyaxis left ; plot(data.t,[data.ekf.x_xy_glob(:,1) x_real*ones(size(data.ekf.x_xy_glob(:,1)))]);
+yyaxis right ; plot(data.t,[data.ekf.x_xy_glob(:,2) y_real*ones(size(data.ekf.x_xy_glob(:,2)))]);
+legend('x_{est,glob}','x_{real,glob}','y_{est,glob}','y_{real,glob}');
+ax(end+1) = subplot_tight(4,1,4,[v_margin h_margin]);
+yyaxis left ; plot(data.t',[data.ekf.z_exp(:,1) data.z(:,1)]);
+yyaxis right ; plot(data.t',[data.ekf.z_exp(:,2) data.z(:,2)]);
+legend('z1_{exp}','z1','z2_{exp}','z2');
+
+%Residuals: 1) Measurements and 2) Estimation (& covariances?)
+figure('Name','ResVar');
+ax(end+1) = subplot_tight(3,1,1,[v_margin h_margin]);
+plot(data.t',[data.z(:,1)-data.ekf.z_exp(:,1) data.z(:,2)-data.ekf.z_exp(:,2)]);
+legend('res_{z1}','res_{z2}');
+ax(end+1) = subplot_tight(3,1,2,[v_margin h_margin]);
+plot(data.t',[W_real-data.ekf.x(:,1) R_real-data.ekf.x(:,2) x_real-data.ekf.x_xy_glob(:,1) y_real-data.ekf.x_xy_glob(:,2)]);
+%yyaxis right ; plot(data.t',data.z(:,2)-data.ekf.z_exp(:,2));
+legend('res_{W}','res_{R}','res_{x}','res_{y}');
+ax(end+1) = subplot_tight(3,1,3,[v_margin h_margin]);
+semilogy(data.t',[data.ekf.P(:,1) data.ekf.P(:,2) data.ekf.P(:,3) data.ekf.P(:,4)]);
+%yyaxis right ; plot(data.t',data.z(:,2)-data.ekf.z_exp(:,2));
+legend('P_{W}','P_{R}','P_{x}','P_{y}');
+
+linkaxes(ax,'x');

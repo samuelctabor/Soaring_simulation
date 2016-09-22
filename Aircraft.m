@@ -22,8 +22,7 @@ classdef Aircraft < handle
         vy
         previous_time=0;
         sinkrate
-        pHistory
-        vHistory
+        History
         h_label;
         h_objective;
         h_thermal;
@@ -52,8 +51,14 @@ classdef Aircraft < handle
             
             obj.roll_param = variables.roll_param;
             
-            obj.pHistory=[posx,posy,posz];
-            obj.vHistory=[obj.vx,obj.vy,obj.vz];
+            obj.History.t=0.0;
+            obj.History.p=[posx,posy,posz];
+            obj.History.v=[obj.vx,obj.vy,obj.vz];
+            obj.History.z=[0,0];
+            obj.History.ekf.z_exp=zeros(1,2); %TODO Check for shift in time by 1 step
+            obj.History.ekf.x = zeros(1,4);
+            obj.History.ekf.x_xy_glob = zeros(1,2);
+            obj.History.ekf.P = zeros(1,4);
         end
         function update(obj,time)
             if obj.posz<0
@@ -78,9 +83,17 @@ classdef Aircraft < handle
             measurements=[obj.updraftsensor.estimated_updraft obj.gradientsensor.estimated_roll_moment];
             
             obj.controller.update(measurements,obj.posx,obj.posy,obj.posz,obj.pathangle,obj.V,time);
+
             %Update history
-            obj.pHistory(end+1,:) = [obj.posx,obj.posy,obj.posx];
-            obj.vHistory(end+1,:) = [obj.vx,obj.vy,obj.vx];
+            obj.History.t(end+1) = time;
+            obj.History.p(end+1,:) = [obj.posx,obj.posy,obj.posz];
+            obj.History.v(end+1,:) = [obj.vx,obj.vy,obj.vx];
+            obj.History.z(end+1,:) = measurements;
+            obj.History.ekf.z_exp(end+1,:) = obj.controller.ekf.z_exp';
+            obj.History.ekf.x(end+1,:) = obj.controller.ekf.x';
+            obj.History.ekf.x_xy_glob(end+1,:) = obj.controller.est_thermal_pos;
+            obj.History.ekf.P(end+1,:) = [obj.controller.ekf.P(1,1) obj.controller.ekf.P(2,2) obj.controller.ekf.P(3,3) obj.controller.ekf.P(4,4)];
+
             %Update state
             obj.posx = obj.posx + deltaT*obj.vx;
             obj.posy = obj.posy + deltaT*obj.vy;
