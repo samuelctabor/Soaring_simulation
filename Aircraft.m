@@ -116,8 +116,8 @@ classdef Aircraft < handle
             obj.Clear();
             colours = (obj.vz(1) + 10)/(10--10);
             colours = max(min(colours,1.0),0.0);
-            colours=ceil(colours*(length(colormap)-1)+1);
-            C=colormap;
+            C=colormap(axis,'jet');
+            colours=ceil(colours*(length(C)-1)+1);
             obj.h_patch=Aircraft.display_ac_patch(axis,obj.posx,obj.posy,obj.posz,C(colours,:),obj.pathangle);
             switch obj.controller.sm.state
                 case StateMachine.thermalling
@@ -189,8 +189,7 @@ classdef Aircraft < handle
             x=xn;
             y=yn;
             
-            axes(axis);
-            h=patch(x+xp,y+yp,ones(size(x))*zp,c);
+            h=patch(axis,x+xp,y+yp,ones(size(x))*zp,c);
             
         end
         
