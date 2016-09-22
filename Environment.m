@@ -10,6 +10,7 @@ classdef Environment < handle
         Thermals;
         xlim=[];
         ylim=[];
+        use_mass_cons_correction = false;
         mass_cons_correction=0;
         x;
         y;
@@ -53,7 +54,7 @@ classdef Environment < handle
                w=w+wi;
                grad=grad+gradi;
            end
-           w=w+env.mass_cons_correction;
+           if(env.use_mass_cons_correction) w=w+env.mass_cons_correction; end;
         end
         function handles=Display(env,displayaxis)
             if numel(env.x)==0
