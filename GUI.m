@@ -22,7 +22,7 @@ function varargout = GUI(varargin)
 
 % Edit the above text to modify the response to help GUI
 
-% Last Modified by GUIDE v2.5 21-Sep-2016 16:03:45
+% Last Modified by GUIDE v2.5 22-Sep-2016 13:37:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,7 +57,7 @@ handles.output = hObject;
 
 
 
-handles.mytimer = timer('Period',0.02,'TimerFcn',{@update,hObject,handles},'ExecutionMode','fixedRate');%,'BusyMode','queue');
+handles.mytimer = timer('Period',0.04,'TimerFcn',{@update,hObject,handles},'ExecutionMode','fixedRate','BusyMode','drop');%,'BusyMode','queue');
 
 handles.simulation = Simulation(handles.axes1);
 
@@ -110,16 +110,15 @@ else
 end
 guidata(hObject, handles);
 
-% --- Executes on button press in fastforwardbutton.
-function fastforwardbutton_Callback(hObject, eventdata, handles)
-% hObject    handle to fastforwardbutton (see GCBO)
+% --- Executes on button press in slowbutton.
+function slowbutton_Callback(hObject, eventdata, handles)
+% hObject    handle to slowbutton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 stop(handles.mytimer);
-handles.mytimer.Period = 0.001;
+handles.simulation.fastforwardfactor = 0.2;
+handles.mytimer.Period = 1.0 / (handles.simulation.execution_frequency * handles.simulation.fastforwardfactor);
 start(handles.mytimer);
-guidata(hObject, handles);
-
 
 % --- Executes on button press in realtimebutton.
 function realtimebutton_Callback(hObject, eventdata, handles)
@@ -127,18 +126,31 @@ function realtimebutton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 stop(handles.mytimer);
-handles.mytimer.Period = 0.02;
+handles.simulation.fastforwardfactor = 1.0;
+handles.mytimer.Period = 1.0 / (handles.simulation.execution_frequency * handles.simulation.fastforwardfactor);
+start(handles.mytimer);
+guidata(hObject, handles);
+
+% --- Executes on button press in fastforwardbutton.
+function fastforwardbutton_Callback(hObject, eventdata, handles)
+% hObject    handle to fastforwardbutton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+stop(handles.mytimer);
+handles.simulation.fastforwardfactor = 4.0;
+handles.mytimer.Period = 1.0 / (handles.simulation.execution_frequency * handles.simulation.fastforwardfactor);
 start(handles.mytimer);
 guidata(hObject, handles);
 
 function update(timerObj,event,hObject,handles)
 handles=guidata(hObject);
-handles.simulation.Update(handles.mytimer.Period);
+handles.simulation.Update(1.0/handles.simulation.execution_frequency);
 %fprintf('%f\n',timerObj.Period);
-drawnow;
+if(handles.simulation.fastforwardfactor <= 1 || mod(event.Data.time(6),1.0)<handles.mytimer.Period) 
+    drawnow;
+end
 % Update handles structure
 guidata(hObject, handles);
-
 
 % --- Executes on selection change in listnames.
 function listnames_Callback(hObject, eventdata, handles)

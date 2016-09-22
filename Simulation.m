@@ -20,6 +20,8 @@ classdef Simulation < handle
         TCPlotHandles;
         MapPlotHandles;
         currenttime=0;
+        execution_frequency = 25; %Simulation execution frequency [Hz]
+        fastforwardfactor = 1.0; %Fast forward for simulation speed up (dt stays same, this is just to calculate faster!)
     end
     
     methods
@@ -41,7 +43,7 @@ classdef Simulation < handle
             variables.cruise_latch_threshhold=      2.0*sinkrate;
             variables.ceiling =                     400;
             variables.begin_search_altitude =       -0;
-            variables.filter_rate           =       10;
+            variables.filter_rate           =       5; %Kalman Filtering frequency [Hz]
             variables.actual_noise          =       0.0;
             variables.actual_noise_z2       =       0.0;
             variables.measurement_noise     =       0.0;%0.5; %TODO This should be the covariance. Is it?
@@ -93,7 +95,7 @@ classdef Simulation < handle
             
             
             
-            aircraft1=Aircraft(-60,-0,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 1');
+            aircraft1=Aircraft(-60,-60,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 1',obj.execution_frequency);
             %aircraft2=Aircraft(-70,-50,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 2');
             
             
@@ -109,6 +111,7 @@ classdef Simulation < handle
         
         function Update(obj,dt)
             title(obj.axis,sprintf('Time: %4.1f seconds',obj.currenttime));
+
             for i=1:length(obj.TheAircraft)
                 obj.TheAircraft(i).update(obj.currenttime+dt);
             end

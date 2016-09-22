@@ -31,10 +31,10 @@ classdef Aircraft < handle
         landed=0;
     end
     methods
-        function obj=Aircraft(posx,posy,posz,V,pathangle,variables,sinkrate,environment,name)
+        function obj=Aircraft(posx,posy,posz,V,pathangle,variables,sinkrate,environment,name,execution_frequency)
             obj.name=name;
             r=1.0; %Variance of measurement
-            obj.controller=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,@obj.print);
+            obj.controller=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,@obj.print,execution_frequency);
             obj.updraftsensor = Variometer(variables.actual_noise);
             obj.gradientsensor = RollMomentSensor(variables.actual_noise_z2);
             

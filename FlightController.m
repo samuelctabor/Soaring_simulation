@@ -64,7 +64,7 @@ classdef FlightController < handle
         
     end
     methods
-        function this=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,printfnct)
+        function this=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,printfnct,execution_frequency)
             this.posx=posx;
             this.posy=posy;
             this.posz=posz;
@@ -110,7 +110,7 @@ classdef FlightController < handle
             P = diag([1 10 100 100]);    %Initial state unknown so large variance
             
             q=0.1;    %std of process
-            q = q*50/variables.filter_rate;
+            q = q*execution_frequency/variables.filter_rate;
             
             %r=0.1;    %std of measurement
             Q=q^2*eye(n); % covariance of process
@@ -120,8 +120,7 @@ classdef FlightController < handle
             
             this.ekf=ExtendedKalmanFilter_thermal(P,x,Q,R);
             %obj.ekf=ExtendedKalmanFilter_arduino(P,x,Q,R);
-            
-            this.filter_skips=floor(50/variables.filter_rate);
+            this.filter_skips=floor(execution_frequency/variables.filter_rate);
             this.filter_iterations=0;
             
         end
@@ -138,7 +137,7 @@ classdef FlightController < handle
             this.posz=posz;
             
             %Provide measurement to low pass filter
-            this.lpf.update(measurements(1));
+            this.lpf.update(measurements);
             
             this.pathangle=pathangle;
             
@@ -146,7 +145,8 @@ classdef FlightController < handle
             
             %Update the Kalman filter
             if this.sm.state==StateMachine.thermalling
-                % Try 10HZ
+                % Only execute Kalman filter every x-th (filter_skips)
+                % iteration
                 if (mod(this.filter_iterations,this.filter_skips)==0)
                 %if 1 %((mod(this.current_time,0.1)<1e-6)||(mod(this.current_time,0.1)>0.099))
                     %this.ekf.update(measurements,V*this.deltaT*cos(this.pathangleold),V*this.deltaT*sin(this.pathangleold));
@@ -257,8 +257,8 @@ classdef FlightController < handle
                     %incentive=this.sinkrate*2;
                     if this.sm.elapsed_time(t)>this.variables.min_cruise_time
                         incentive = FlightController.MacCready(this.posz,this.sinkrate)*0.5;
-                        if this.lpf.filtered > incentive
-                            this.print(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered,FlightController.MacCready(this.posz,this.sinkrate)*0.5));
+                        if this.lpf.filtered(1) > incentive
+                            this.print(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered(1),FlightController.MacCready(this.posz,this.sinkrate)*0.5));
                             this.print('Filter reset');
                             this.ekf.reset([5;15;cos(this.pathangle)*10;sin(this.pathangle)*10],diag([2, 10, 20, 20]));
                             %obj.sm.set(StateMachine.investigating_straight,t)
