@@ -101,10 +101,13 @@ classdef Simulation < handle
             
             obj.TheAircraft=[aircraft1];%,aircraft2];
 
-            Points = [100,100; -100,-100];
+            Points{1} = [-100,100,0; -100,-100,0]; %Straight line up
+            Points{2} = [-50,100,0; 50,-100,0 ; 150,100,0]; %Zick-Zack
+            Points{3} = [-100,100,0; -0,-50,1]; %Straight line up then open loop loiter near center
+            ChooseWaypointsNr = 3;
             
             for i=1:length(obj.TheAircraft)
-                obj.TheAircraft(i).controller.Waypoints = Points;
+                obj.TheAircraft(i).controller.Waypoints = Points{ChooseWaypointsNr};
                 %obj.TheAircraft(i).controller.sm.set(StateMachine.cruising, obj.currenttime);
             end
         end

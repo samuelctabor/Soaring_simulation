@@ -22,7 +22,7 @@ function varargout = GUI(varargin)
 
 % Edit the above text to modify the response to help GUI
 
-% Last Modified by GUIDE v2.5 22-Sep-2016 13:37:23
+% Last Modified by GUIDE v2.5 27-Sep-2016 16:41:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -304,3 +304,11 @@ semilogy(data.t',[data.ekf.P(:,1) data.ekf.P(:,2) data.ekf.P(:,3) data.ekf.P(:,4
 legend('P_{W}','P_{R}','P_{x}','P_{y}');
 
 linkaxes(ax,'x');
+
+% --- Executes on button press in ThermalTrackingActiveCheckbox.
+function ThermalTrackingActiveCheckbox_Callback(hObject, eventdata, handles)
+% hObject    handle to ThermalTrackingActiveCheckbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.simulation.TheAircraft(1).controller.ThermalTrackingActive = get(hObject,'Value');
+% Hint: get(hObject,'Value') returns toggle state of ThermalTrackingActiveCheckbox

@@ -15,6 +15,7 @@ classdef FlightController < handle
     properties
         Waypoints;
         currentWaypoint=1;
+        ThermalTrackingActive=true;
     end
     properties (SetAccess=protected)
         variables;              %Holds the variables we want to be configurable
@@ -233,23 +234,6 @@ classdef FlightController < handle
                         end
                     end
                 case StateMachine.cruising
-                    %Do we need to move to next waypoint?
-                    if norm([this.posx,this.posy]-this.Waypoints(this.currentWaypoint,:))<this.variables.Waypointtol
-                        this.print(sprintf('Reached waypoint %d',this.currentWaypoint));
-                        if (this.currentWaypoint)==size(this.Waypoints,1)
-                            %Final waypoint. Start again.
-                            this.print('At final waypoint.');
-                            this.heading_controller.reset_I();
-                            this.currentWaypoint=1;
-                        else
-                            %Go to next waypoint.
-                            this.currentWaypoint=this.currentWaypoint+1;
-                            this.print(sprintf('Waypoint %d next',this.currentWaypoint));
-                            this.heading_controller.reset_I();
-                        end
-                        %newpath=pf.plan([this.posx,this.posy,this.posz],[80,80,10])
-                        %Now the actual route array should be updated
-                    end
                     %Is there a thermal we should catch?
                     %Depends how close to destination, how much altitude,
                     %how strong a thermal.
@@ -277,20 +261,46 @@ classdef FlightController < handle
                     end
             end
             
+            % Waypoint Switching code. Always executed when waypoint
+            % switching is required, so not only for cruise mode
+            if(this.sm.state == StateMachine.cruising || (this.sm.state == StateMachine.thermalling && this.ThermalTrackingActive==false))
+                %Do we need to move to next waypoint? 
+                if norm([this.posx,this.posy]-this.Waypoints(this.currentWaypoint,1:2))<this.variables.Waypointtol
+                    this.print(sprintf('Reached waypoint %d',this.currentWaypoint));
+                    if (this.currentWaypoint)==size(this.Waypoints,1)
+                        %Final waypoint. Start again.
+                        this.print('At final waypoint.');
+                        this.heading_controller.reset_I();
+                        this.currentWaypoint=1;
+                    else
+                        %Go to next waypoint.
+                        this.currentWaypoint=this.currentWaypoint+1;
+                        this.print(sprintf('Waypoint %d next',this.currentWaypoint));
+                        this.heading_controller.reset_I();
+                    end
+                    %newpath=pf.plan([this.posx,this.posy,this.posz],[80,80,10])
+                    %Now the actual route array should be updated
+                end
+            end
+            
         end
         function determine_heading(this)
-            switch this.sm.state
-                case StateMachine.searching
-                    %Fly a spiral pattern
-                    angle = atan2(this.search_centre(2)-this.posy,this.search_centre(1)-this.posx);
-                    this.nav_bearing = angle - ((pi/2) + this.variables.search_pitch_angle);
-                case StateMachine.thermalling
-                    %Orbit the thermal centre
-                    this.nav_bearing=this.calc_bearing_thermalling(this.ekf.x,this.pathangle,this.variables);
-                case StateMachine.cruising
-                    %Navigate towards waypoint
-                    wp=this.Waypoints(this.currentWaypoint,:);
+            if (this.sm.state==StateMachine.searching)
+                %Fly a spiral pattern
+                angle = atan2(this.search_centre(2)-this.posy,this.search_centre(1)-this.posx);
+                this.nav_bearing = angle - ((pi/2) + this.variables.search_pitch_angle);
+            elseif (StateMachine.thermalling && this.ThermalTrackingActive==true)
+                %Orbit the thermal centre
+                this.nav_bearing=this.calc_bearing_thermalling(this.ekf.x,this.pathangle,this.variables);
+            else %Executed for state StateMachine.cruising and when ThermalTrackingActive==false
+                %Navigate towards waypoint
+                wp=this.Waypoints(this.currentWaypoint,:);
+                if (wp(3)==0) %StraightLine WP
                     this.nav_bearing = atan2(wp(2)-this.posy,wp(1)-this.posx);
+                elseif(wp(3)==1) %Loitering WP
+                    xLoiter = [0 0 wp(1)-this.posx wp(2)-this.posy];
+                    this.nav_bearing=this.calc_bearing_thermalling(xLoiter,this.pathangle,this.variables);
+                end
             end
         end
         

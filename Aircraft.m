@@ -122,6 +122,7 @@ classdef Aircraft < handle
             switch obj.controller.sm.state
                 case StateMachine.thermalling
                     [obj.h_objective(1),obj.h_objective(2)]=Aircraft.display_objective(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posx,obj.posy,obj.posz,'r:^','r-.');
+                    if(obj.controller.ThermalTrackingActive==false) [obj.h_objective(3),obj.h_objective(4)]=Aircraft.display_objective(axis,obj.controller.Waypoints(obj.controller.currentWaypoint,1),obj.controller.Waypoints(obj.controller.currentWaypoint,2),obj.posx,obj.posy,obj.posz,'b:^','b-.'); end;
                     obj.h_thermal = Aircraft.display_thermal_cov(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posz,obj.controller.ekf.P(3,3),obj.controller.ekf.P(4,4));
                 case StateMachine.searching
                     [obj.h_objective(1),obj.h_objective(2)]=Aircraft.display_objective(axis,obj.controller.search_centre(1),obj.controller.search_centre(2),obj.posx,obj.posy,obj.posz,'g:^','g-.');
@@ -142,6 +143,7 @@ classdef Aircraft < handle
             try
                 delete(obj.h_label);
                 delete(obj.h_objective);
+                obj.h_objective = [];
                 delete(obj.h_patch);
                 delete(obj.h_map);
                 delete(obj.h_thermal);
