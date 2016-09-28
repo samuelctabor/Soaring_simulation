@@ -16,12 +16,13 @@ classdef FlightController < handle
         Waypoints;
         currentWaypoint=1;
         ThermalTrackingActive=true;
+        KFtype=1; % EKF=1, UKF=2
     end
     properties (SetAccess=protected)
         variables;              %Holds the variables we want to be configurable
         turnrate=0;
         sm;                     %StateMachine
-        ekf;
+        kf;
         heading_controller;
         
         V;
@@ -42,6 +43,8 @@ classdef FlightController < handle
         map;
         
         pf;
+        
+        sigma_points_glob;
         
         %For filter
         prev_posx;
@@ -102,29 +105,40 @@ classdef FlightController < handle
             this.heading_controller = Heading_Controller(variables.k_p,variables.k_d,variables.k_i,max_turnrate);
             this.search_centre = [posx,posy+(5)];
             this.est_thermal_pos = [0,0];
-            
-            %---------------------%
-            %----Set up ekf-------%
+
+            SetupKalmanFilter(this, execution_frequency);
+        end
+        
+        function SetupKalmanFilter(this,execution_frequency)
+            %-------------------------%
+            %----Set up ekf/ukf-------%
             n=4;
             m=2;
             x=[5;15;-5;0];                                   % inital state estimate
             P = diag([1 10 100 100]);    %Initial state unknown so large variance
             
             q=0.1;    %std of process
-            q = q*execution_frequency/variables.filter_rate;
+            q = q*execution_frequency/this.variables.filter_rate;
             
             %r=0.1;    %std of measurement
             Q=q^2*eye(n); % covariance of process
             R=zeros(m,m);
-            R(1,1) = variables.measurement_noise^2;
-            R(2,2) = variables.measurement_noise_z2^2;
+            R(1,1) = this.variables.measurement_noise^2;
+            R(2,2) = this.variables.measurement_noise_z2^2;
             
-            this.ekf=ExtendedKalmanFilter_thermal(P,x,Q,R);
-            %obj.ekf=ExtendedKalmanFilter_arduino(P,x,Q,R);
-            this.filter_skips=floor(execution_frequency/variables.filter_rate);
+            if(this.KFtype==1) 
+                display('Initialising EKF');
+                this.kf=ExtendedKalmanFilter_thermal(P,x,Q,R);
+            elseif(this.KFtype==2) 
+                display('Initialising UKF');
+                this.kf=UnscentedKalmanFilter_thermal(P,x,Q,R);
+            end
+
+            %obj.kf=ExtendedKalmanFilter_arduino(P,x,Q,R);
+            this.filter_skips=floor(execution_frequency/this.variables.filter_rate);
             this.filter_iterations=0;
-            
         end
+        
         function update(this,measurements,posx,posy,posz,pathangle,V,time)
             this.prev_time=this.current_time;
             this.current_time=time;
@@ -150,21 +164,24 @@ classdef FlightController < handle
                 % iteration
                 if (mod(this.filter_iterations,this.filter_skips)==0)
                 %if 1 %((mod(this.current_time,0.1)<1e-6)||(mod(this.current_time,0.1)>0.099))
-                    %this.ekf.update(measurements,V*this.deltaT*cos(this.pathangleold),V*this.deltaT*sin(this.pathangleold));
-                    this.ekf.update(measurements,this.posx-this.prev_posx,this.posy-this.prev_posy,pathangle,this.variables.roll_param);
+                    %this.kf.update(measurements,V*this.deltaT*cos(this.pathangleold),V*this.deltaT*sin(this.pathangleold));
+                    this.kf.update(measurements,this.posx-this.prev_posx,this.posy-this.prev_posy,pathangle,this.variables.roll_param);
 
                     this.prev_posx = this.posx;
                     this.prev_posy = this.posy;
                     this.prev_posz = this.posz;
                     
                     %Estimated global position of thermal
-                    this.est_thermal_pos = [posx+this.ekf.x(3),posy+this.ekf.x(4)];
+                    this.est_thermal_pos = [posx+this.kf.x(3),posy+this.kf.x(4)];
+                    if(this.KFtype == 2)
+                        this.sigma_points_glob = [this.kf.x, this.kf.sigma_points]+ [0 0 posx posy]';
+                    end
                 end
-                %obj.print(sprintf('Cov %f %f %f %f',obj.ekf.P(1,1),obj.ekf.P(2,2),obj.ekf.P(3,3),obj.ekf.P(4,4)));
+                %obj.print(sprintf('Cov %f %f %f %f',obj.kf.P(1,1),obj.kf.P(2,2),obj.kf.P(3,3),obj.kf.P(4,4)));
                 this.filter_iterations = this.filter_iterations+1;
             end
             %Estimate the climb we can achieve
-            this.thermalability=this.calc_thermalability(this.ekf.x,this.variables.thermalling_radius);
+            this.thermalability=this.calc_thermalability(this.kf.x,this.variables.thermalling_radius);
             
             %Distance to next waypoint
             this.distance_to_next_wp = norm([posx-this.Waypoints(this.currentWaypoint,1),posy-this.Waypoints(this.currentWaypoint,2)]);
@@ -208,7 +225,7 @@ classdef FlightController < handle
                         %We reset it to 10m ahead of the aircraft, but give
                         %it a high covariance P so it will adjust quickly.
                         this.print('Filter reset');
-                        this.ekf.reset([5;15;cos(this.pathangle)*10;sin(this.pathangle)*10],diag([2, 10, 20, 20]));
+                        this.kf.reset([5;100;cos(this.pathangle)*10;sin(this.pathangle)*10],diag([2, 50, 100, 100]));
                         this.sm.set(StateMachine.thermalling,t);
                         this.heading_controller.reset_I();
                         this.turnrate=0;
@@ -244,9 +261,9 @@ classdef FlightController < handle
                         if this.lpf.filtered(1) > incentive
                             this.print(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered(1),FlightController.MacCready(this.posz,this.sinkrate)*0.5));
                             this.print('Filter reset');
-                            this.ekf.reset([5;15;cos(this.pathangle)*10;sin(this.pathangle)*10],diag([2, 10, 20, 20]));
+                            this.kf.reset([5;100;cos(this.pathangle)*10;sin(this.pathangle)*10],diag([2, 50, 100, 100]));
                             %obj.sm.set(StateMachine.investigating_straight,t)
-                            this.sm.set(StateMachine.thermalling,t)
+                            this.sm.set(StateMachine.thermalling,t);
                             this.heading_controller.reset_I();
                             this.prev_posx = this.posx;
                             this.prev_posy = this.posy;
@@ -291,7 +308,7 @@ classdef FlightController < handle
                 this.nav_bearing = angle - ((pi/2) + this.variables.search_pitch_angle);
             elseif (StateMachine.thermalling && this.ThermalTrackingActive==true)
                 %Orbit the thermal centre
-                this.nav_bearing=this.calc_bearing_thermalling(this.ekf.x,this.pathangle,this.variables);
+                this.nav_bearing=this.calc_bearing_thermalling(this.kf.x,this.pathangle,this.variables);
             else %Executed for state StateMachine.cruising and when ThermalTrackingActive==false
                 %Navigate towards waypoint
                 wp=this.Waypoints(this.currentWaypoint,:);
@@ -310,7 +327,7 @@ classdef FlightController < handle
         end
         
         function add_estimate_to_map(this)
-            this.map.add_data_point_filter(this.posx,this.posy,this.ekf.x,this.ekf.P);
+            this.map.add_data_point_filter(this.posx,this.posy,this.kf.x,this.kf.P);
         end
     end
     

@@ -22,7 +22,7 @@ function varargout = GUI(varargin)
 
 % Edit the above text to modify the response to help GUI
 
-% Last Modified by GUIDE v2.5 27-Sep-2016 16:41:32
+% Last Modified by GUIDE v2.5 27-Sep-2016 17:31:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -263,7 +263,7 @@ v_margin = 0.05;
 figure('Name','3D Pos');
 plot3(data.p(:,1),data.p(:,2),data.p(:,3));
 hold all
-plot3(data.ekf.x_xy_glob(:,1), data.ekf.x_xy_glob(:,2), zeros(size(data.ekf.x_xy_glob(:,2))));
+plot3(data.kf.x_xy_glob(:,1), data.kf.x_xy_glob(:,2), zeros(size(data.kf.x_xy_glob(:,2))));
 legend('Airplane pos','Estimated Thermal Pos');
 contour(handles.simulation.environment.x,handles.simulation.environment.y,handles.simulation.environment.z);
 xlabel('x');
@@ -273,34 +273,34 @@ zlabel('z');
 %States and measurements
 figure('Name','States');
 ax(1) = subplot_tight(4,1,1,[v_margin h_margin]);
-yyaxis left ; plot(data.t,[data.ekf.x(:,1) W_real*ones(size(data.ekf.x(:,1)))]);
-yyaxis right ; plot(data.t,[data.ekf.x(:,2) R_real*ones(size(data.ekf.x(:,1)))]);
+yyaxis left ; plot(data.t,[data.kf.x(:,1) W_real*ones(size(data.kf.x(:,1)))]);
+yyaxis right ; plot(data.t,[data.kf.x(:,2) R_real*ones(size(data.kf.x(:,1)))]);
 legend('W_{est}','W_{real}','R_{est}','R_{real}');
 ax(end+1) = subplot_tight(4,1,2,[v_margin h_margin]);
-yyaxis left ; plot(data.t,data.ekf.x(:,3));
-yyaxis right ; plot(data.t,data.ekf.x(:,4));
+yyaxis left ; plot(data.t,data.kf.x(:,3));
+yyaxis right ; plot(data.t,data.kf.x(:,4));
 legend('x_{est,local}','y_{est,local}');
 ax(end+1) = subplot_tight(4,1,3,[v_margin h_margin]);
-yyaxis left ; plot(data.t,[data.ekf.x_xy_glob(:,1) x_real*ones(size(data.ekf.x_xy_glob(:,1)))]);
-yyaxis right ; plot(data.t,[data.ekf.x_xy_glob(:,2) y_real*ones(size(data.ekf.x_xy_glob(:,2)))]);
+yyaxis left ; plot(data.t,[data.kf.x_xy_glob(:,1) x_real*ones(size(data.kf.x_xy_glob(:,1)))]);
+yyaxis right ; plot(data.t,[data.kf.x_xy_glob(:,2) y_real*ones(size(data.kf.x_xy_glob(:,2)))]);
 legend('x_{est,glob}','x_{real,glob}','y_{est,glob}','y_{real,glob}');
 ax(end+1) = subplot_tight(4,1,4,[v_margin h_margin]);
-yyaxis left ; plot(data.t',[data.ekf.z_exp(:,1) data.z(:,1)]);
-yyaxis right ; plot(data.t',[data.ekf.z_exp(:,2) data.z(:,2)]);
+yyaxis left ; plot(data.t',[data.kf.z_exp(:,1) data.z(:,1)]);
+yyaxis right ; plot(data.t',[data.kf.z_exp(:,2) data.z(:,2)]);
 legend('z1_{exp}','z1','z2_{exp}','z2');
 
 %Residuals: 1) Measurements and 2) Estimation (& covariances?)
 figure('Name','ResVar');
 ax(end+1) = subplot_tight(3,1,1,[v_margin h_margin]);
-plot(data.t',[data.z(:,1)-data.ekf.z_exp(:,1) data.z(:,2)-data.ekf.z_exp(:,2)]);
+plot(data.t',[data.z(:,1)-data.kf.z_exp(:,1) data.z(:,2)-data.kf.z_exp(:,2)]);
 legend('res_{z1}','res_{z2}');
 ax(end+1) = subplot_tight(3,1,2,[v_margin h_margin]);
-plot(data.t',[W_real-data.ekf.x(:,1) R_real-data.ekf.x(:,2) x_real-data.ekf.x_xy_glob(:,1) y_real-data.ekf.x_xy_glob(:,2)]);
-%yyaxis right ; plot(data.t',data.z(:,2)-data.ekf.z_exp(:,2));
+plot(data.t',[W_real-data.kf.x(:,1) R_real-data.kf.x(:,2) x_real-data.kf.x_xy_glob(:,1) y_real-data.kf.x_xy_glob(:,2)]);
+%yyaxis right ; plot(data.t',data.z(:,2)-data.kf.z_exp(:,2));
 legend('res_{W}','res_{R}','res_{x}','res_{y}');
 ax(end+1) = subplot_tight(3,1,3,[v_margin h_margin]);
-semilogy(data.t',[data.ekf.P(:,1) data.ekf.P(:,2) data.ekf.P(:,3) data.ekf.P(:,4)]);
-%yyaxis right ; plot(data.t',data.z(:,2)-data.ekf.z_exp(:,2));
+semilogy(data.t',[data.kf.P(:,1) data.kf.P(:,2) data.kf.P(:,3) data.kf.P(:,4)]);
+%yyaxis right ; plot(data.t',data.z(:,2)-data.kf.z_exp(:,2));
 legend('P_{W}','P_{R}','P_{x}','P_{y}');
 
 linkaxes(ax,'x');
@@ -312,3 +312,30 @@ function ThermalTrackingActiveCheckbox_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 handles.simulation.TheAircraft(1).controller.ThermalTrackingActive = get(hObject,'Value');
 % Hint: get(hObject,'Value') returns toggle state of ThermalTrackingActiveCheckbox
+
+
+% --- Executes on selection change in KFtypePopupMenu.
+function KFtypePopupMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to KFtypePopupMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns KFtypePopupMenu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from KFtypePopupMenu
+
+handles.simulation.TheAircraft(1).controller.KFtype = get(hObject,'Value');
+handles.simulation.TheAircraft(1).controller.SetupKalmanFilter(handles.simulation.execution_frequency);
+
+
+% --- Executes during object creation, after setting all properties.
+function KFtypePopupMenu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to KFtypePopupMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+   set(hObject,'BackgroundColor','white');
+end
+handles.simulation.TheAircraft(1).controller.KFtype = get(hObject,'Value');

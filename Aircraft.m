@@ -28,6 +28,7 @@ classdef Aircraft < handle
         h_thermal;
         h_patch;
         h_map;
+        h_sigmaPoints;
         landed=0;
     end
     methods
@@ -55,10 +56,10 @@ classdef Aircraft < handle
             obj.History.p=[posx,posy,posz];
             obj.History.v=[obj.vx,obj.vy,obj.vz];
             obj.History.z=[0,0];
-            obj.History.ekf.z_exp=zeros(1,2); %TODO Check for shift in time by 1 step
-            obj.History.ekf.x = zeros(1,4);
-            obj.History.ekf.x_xy_glob = zeros(1,2);
-            obj.History.ekf.P = zeros(1,4);
+            obj.History.kf.z_exp=zeros(1,2); %TODO Check for shift in time by 1 step
+            obj.History.kf.x = zeros(1,4);
+            obj.History.kf.x_xy_glob = zeros(1,2);
+            obj.History.kf.P = zeros(1,4);
         end
         function update(obj,time)
             if obj.posz<0
@@ -89,10 +90,10 @@ classdef Aircraft < handle
             obj.History.p(end+1,:) = [obj.posx,obj.posy,obj.posz];
             obj.History.v(end+1,:) = [obj.vx,obj.vy,obj.vx];
             obj.History.z(end+1,:) = measurements;
-            obj.History.ekf.z_exp(end+1,:) = obj.controller.ekf.z_exp';
-            obj.History.ekf.x(end+1,:) = obj.controller.ekf.x';
-            obj.History.ekf.x_xy_glob(end+1,:) = obj.controller.est_thermal_pos;
-            obj.History.ekf.P(end+1,:) = [obj.controller.ekf.P(1,1) obj.controller.ekf.P(2,2) obj.controller.ekf.P(3,3) obj.controller.ekf.P(4,4)];
+            obj.History.kf.z_exp(end+1,:) = obj.controller.kf.z_exp';
+            obj.History.kf.x(end+1,:) = obj.controller.kf.x';
+            obj.History.kf.x_xy_glob(end+1,:) = obj.controller.est_thermal_pos;
+            obj.History.kf.P(end+1,:) = [obj.controller.kf.P(1,1) obj.controller.kf.P(2,2) obj.controller.kf.P(3,3) obj.controller.kf.P(4,4)];
 
             %Update state
             obj.posx = obj.posx + deltaT*obj.vx;
@@ -123,7 +124,15 @@ classdef Aircraft < handle
                 case StateMachine.thermalling
                     [obj.h_objective(1),obj.h_objective(2)]=Aircraft.display_objective(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posx,obj.posy,obj.posz,'r:^','r-.');
                     if(obj.controller.ThermalTrackingActive==false) [obj.h_objective(3),obj.h_objective(4)]=Aircraft.display_objective(axis,obj.controller.Waypoints(obj.controller.currentWaypoint,1),obj.controller.Waypoints(obj.controller.currentWaypoint,2),obj.posx,obj.posy,obj.posz,'b:^','b-.'); end;
-                    obj.h_thermal = Aircraft.display_thermal_cov(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posz,obj.controller.ekf.P(3,3),obj.controller.ekf.P(4,4));
+                    obj.h_thermal = Aircraft.display_thermal_cov(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posz,obj.controller.kf.P(3,3),obj.controller.kf.P(4,4));
+
+                    %If the UKF is active, plot the (valid) sigma points
+                    if(obj.controller.KFtype==2 && numel(obj.controller.kf.sigma_points)>0)
+                        obj.h_sigmaPoints = plot(axis,obj.controller.sigma_points_glob(3,1),obj.controller.sigma_points_glob(4,1),'o','MarkerSize',obj.controller.sigma_points_glob(2,1)/max(obj.controller.sigma_points_glob(2,:))*5.0);
+                        for i = 2:2*numel(obj.controller.kf.x)+1
+                            obj.h_sigmaPoints(end+1) = plot(axis,obj.controller.sigma_points_glob(3,i),obj.controller.sigma_points_glob(4,i),'o','MarkerSize',obj.controller.sigma_points_glob(2,i)/max(obj.controller.sigma_points_glob(2,:))*5.0);
+                        end
+                    end
                 case StateMachine.searching
                     [obj.h_objective(1),obj.h_objective(2)]=Aircraft.display_objective(axis,obj.controller.search_centre(1),obj.controller.search_centre(2),obj.posx,obj.posy,obj.posz,'g:^','g-.');
                 case StateMachine.cruising
@@ -147,6 +156,7 @@ classdef Aircraft < handle
                 delete(obj.h_patch);
                 delete(obj.h_map);
                 delete(obj.h_thermal);
+                delete(obj.h_sigmaPoints);
             catch
             end
         end
