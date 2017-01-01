@@ -68,7 +68,7 @@ classdef FlightController < handle
         
     end
     methods
-        function this=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,printfnct,execution_frequency)
+        function this=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,printfnct,execution_frequency,WPs)
             this.posx=posx;
             this.posy=posy;
             this.posz=posz;
@@ -83,6 +83,7 @@ classdef FlightController < handle
             this.pathangleold=pathangle;
             
             this.nav_bearing=this.pathangle;
+            this.Waypoints = WPs;
             
             this.variables=variables;
             this.printfnct=printfnct;

@@ -106,10 +106,8 @@ classdef Simulation < handle
             Points{3} = [-100,100,0; -0,-50,1]; %Straight line up then open loop loiter near center
             ChooseWaypointsNr = 3;
             
-            for i=1:length(obj.TheAircraft)
-                obj.TheAircraft(i).controller.Waypoints = Points{ChooseWaypointsNr};
-                %obj.TheAircraft(i).controller.sm.set(StateMachine.cruising, obj.currenttime);
-            end
+            obj.TheAircraft=Aircraft(-100,-100,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 1',obj.execution_frequency,Points{ChooseWaypointsNr});
+            %aircraft2=Aircraft(-70,-50,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 2');
         end
         
         function Update(obj,dt)
