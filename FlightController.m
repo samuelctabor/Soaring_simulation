@@ -117,14 +117,11 @@ classdef FlightController < handle
             x=[5;15;-5;0];                                   % inital state estimate
             P = diag([1 10 100 100]);    %Initial state unknown so large variance
             
-            q=0.1;    %std of process
-            q = q*execution_frequency/this.variables.filter_rate;
+            q_temp = [this.variables.process_noise_q1, this.variables.process_noise_q2, this.variables.process_noise_q3, this.variables.process_noise_q3]; 
+            Q = (diag(q_temp)*execution_frequency/this.variables.filter_rate)^2; %Covariance of process
             
-            %r=0.1;    %std of measurement
-            Q=q^2*eye(n); % covariance of process
-            R=zeros(m,m);
-            R(1,1) = this.variables.measurement_noise^2;
-            R(2,2) = this.variables.measurement_noise_z2^2;
+            r_temp = [this.variables.measurement_noise, this.variables.measurement_noise_z2];
+            R = diag(r_temp)^2;
             
             if(this.KFtype==1) 
                 this.kf=ExtendedKalmanFilter_thermal(P,x,Q,R);

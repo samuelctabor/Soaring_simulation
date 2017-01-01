@@ -46,9 +46,11 @@ classdef Simulation < handle
             variables.filter_rate           =       5; %Kalman Filtering frequency [Hz]
             variables.actual_noise          =       0.0;
             variables.actual_noise_z2       =       0.0;
-            variables.measurement_noise     =       0.0;%0.5; %TODO This should be the covariance. Is it?
-            variables.measurement_noise_z2  =       10000.0;%0.4; %TODO This should be the covariance. Is it?
-            
+            variables.measurement_noise     =       0.2; %This is the standard deviation
+            variables.measurement_noise_z2  =       10000.1; %This is the standard deviation
+            variables.process_noise_q1      =       0.001; %This is the standard deviation for W
+            variables.process_noise_q2      =       0.1; %This is the standard deviation for R
+            variables.process_noise_q3      =       0.2; %This is the standard deviation for x,y
             variables.thermalling_radius =          20;
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
