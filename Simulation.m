@@ -86,22 +86,16 @@ classdef Simulation < handle
             
             %vV=zeros(3,N);
             
-            X = [-70,  -20, 70, 0 , 0 ];
-            Y = [-60,  -20, 0,  50, -20];
+            number_thermals = 1;
+            X = 0;
+            Y = 0;
+            %X = [-70,  -20, 70, 0 , 0 ];
+            %Y = [-60,  -20, 0,  50, -20];
             
-            obj.environment=Environment([-size,size],[-size,size],5,@GaussianThermal,obj.axis,X,Y);
+            obj.environment=Environment([-size,size],[-size,size],number_thermals,@GaussianThermal,obj.axis,X,Y);
             %obj.environment=Environment_grid([-size,size],[-size,size],450,@FlightGearThermal,obj.axis,X,Y);
             %obj.environment=Environment_random([-size,size],[-size,size],5,@FlightGearThermal,obj.axis,X,Y);
-            
             obj.environment.print;
-            
-            
-            
-            aircraft1=Aircraft(-60,-60,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 1',obj.execution_frequency);
-            %aircraft2=Aircraft(-70,-50,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 2');
-            
-            
-            obj.TheAircraft=[aircraft1];%,aircraft2];
 
             Points{1} = [-100,100,0; -100,-100,0]; %Straight line up
             Points{2} = [-50,100,0; 50,-100,0 ; 150,100,0]; %Zick-Zack
