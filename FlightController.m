@@ -87,8 +87,7 @@ classdef FlightController < handle
             
             this.variables=variables;
             this.printfnct=printfnct;
-            Vref=15;
-            this.printfnct('Initialised');
+            if(~this.variables.bSimulateSilently); this.printfnct('Initialised'); end;
             
             %Derivative variables
             this.sinkrate=sinkrate;
@@ -128,11 +127,11 @@ classdef FlightController < handle
             R(2,2) = this.variables.measurement_noise_z2^2;
             
             if(this.KFtype==1) 
-                display('Initialising EKF');
                 this.kf=ExtendedKalmanFilter_thermal(P,x,Q,R);
+                if(~this.variables.bSimulateSilently); display('Initialised EKF.'); end;
             elseif(this.KFtype==2) 
-                display('Initialising UKF');
                 this.kf=UnscentedKalmanFilter_thermal(P,x,Q,R);
+                if(~this.variables.bSimulateSilently); display('Initialised UKF.'); end;
             end
 
             %obj.kf=ExtendedKalmanFilter_arduino(P,x,Q,R);
@@ -203,7 +202,7 @@ classdef FlightController < handle
             
         end
         function print(this,message)
-            this.printfnct(sprintf('FC: %s',message));
+            if(~this.variables.bSimulateSilently); this.printfnct(sprintf('FC: %s',message)); end;
         end
         function update_variable(this,name,value)
             this.variables.(name)=value;

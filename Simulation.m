@@ -51,9 +51,9 @@ classdef Simulation < handle
             
             variables.thermalling_radius =          20;
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
+            variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
             % turnrate = (g/V)*tan(phi)
 
-           
             variables.search_pitch_angle =          deg2rad(5.0);
             variables.min_thermal_latch_time=       5;
 
@@ -110,16 +110,18 @@ classdef Simulation < handle
             %aircraft2=Aircraft(-70,-50,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 2');
         end
         
-        function Update(obj,dt)
-            title(obj.axis,sprintf('Time: %4.1f seconds',obj.currenttime));
+        function Update(obj,dt,bSimulateSilently)
+            if(nargin<3); bSimulateSilently=false; end
 
             for i=1:length(obj.TheAircraft)
                 obj.TheAircraft(i).update(obj.currenttime+dt);
             end
             
-            
-            for i=1:length(obj.TheAircraft)
-                obj.TheAircraft(i).Display(obj.axis);
+            if(~bSimulateSilently)
+                title(obj.axis,sprintf('Time: %4.1f seconds',obj.currenttime));
+                for i=1:length(obj.TheAircraft)
+                    obj.TheAircraft(i).Display(obj.axis);
+                end
             end
             
             obj.currenttime = obj.currenttime+dt;
