@@ -252,7 +252,7 @@ data = handles.simulation.TheAircraft(1).History;
 
 %Define the "ground truth" or real thermal values here!
 W_real = 3;
-R_real = 50;
+R_real = 120;
 x_real = 0;
 y_real = 0;
 

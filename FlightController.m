@@ -101,7 +101,7 @@ classdef FlightController < handle
             %this.sm.set(StateMachine.searching,0);
             this.sm.set(StateMachine.cruising,0);
             
-            max_turnrate = 9.81*this.V*tan(deg2rad(60));
+            max_turnrate = 9.81*this.V*tan(deg2rad(30));
             this.heading_controller = Heading_Controller(variables.k_p,variables.k_d,variables.k_i,max_turnrate);
             this.search_centre = [posx,posy+(5)];
             this.est_thermal_pos = [0,0];
@@ -239,7 +239,7 @@ classdef FlightController < handle
                             this.sm.set(StateMachine.cruising,t);
                             this.heading_controller.reset_I();
                             this.turnrate=0;
-                        elseif (this.thermalability<FlightController.MacCready(this.posz,this.sinkrate))
+                        elseif (this.thermalability<0.3 || this.lpf.filtered(1) < 0.2)%FlightController.MacCready(this.posz,this.sinkrate))
                             this.print(sprintf('MacCready speed not met (%2.2f/%2.2f)',this.thermalability,FlightController.MacCready(this.posz,this.sinkrate)));
                             this.add_estimate_to_map();
                             this.sm.set(StateMachine.cruising,t);

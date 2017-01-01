@@ -35,7 +35,8 @@ classdef Environment < handle
             
             for i=1:number_thermals    
                 %h=thermal_type(xloc(i),yloc(i),5,20);
-                h=thermal_types{ceil(rand(1)*2)}(xloc(i),yloc(i),5,20);
+                h=thermal_type(xloc(i),yloc(i),3,120);
+                %h=thermal_types{ceil(rand(1)*2)}(xloc(i),yloc(i),5,20);
                 thermals{i}=h;
             end
             obj.Thermals=thermals;
@@ -62,7 +63,7 @@ classdef Environment < handle
                 step=3;
                 env.Grid(step);
             end
-            [C,handles]=contour(displayaxis,env.x,env.y,env.z);
+            [C,handles]=contour(displayaxis,env.x,env.y,env.z,10);
             %clabel(C,handles);
         end
         function Grid(env,step)

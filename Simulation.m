@@ -20,7 +20,7 @@ classdef Simulation < handle
         TCPlotHandles;
         MapPlotHandles;
         currenttime=0;
-        execution_frequency = 25; %Simulation execution frequency [Hz]
+        execution_frequency = 20; %Simulation execution frequency [Hz]
         fastforwardfactor = 1.0; %Fast forward for simulation speed up (dt stays same, this is just to calculate faster!)
     end
     
@@ -32,7 +32,7 @@ classdef Simulation < handle
             
             pathangle = 0;
             
-            V=15;
+            V=19.6;
             
             sinkrate=V/10;
             
@@ -76,8 +76,8 @@ classdef Simulation < handle
             axis(obj.axis,'equal');
             %obj.axis=gca;
             t=0;
-            grid on;
-            size=100;
+            %grid on;
+            size=250;
             % initial state covraiance
             N=1000;                                          % total dynamic steps
             %xV = zeros(n,N);          %estmate              % allocate memory
