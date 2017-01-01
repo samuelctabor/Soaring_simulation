@@ -37,28 +37,48 @@ classdef Aircraft < handle
             obj.controller=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,@obj.print,execution_frequency, Waypoints);
             obj.updraftsensor = Variometer(variables.actual_noise);
             obj.gradientsensor = RollMomentSensor(variables.actual_noise_z2);
-            
-            obj.posx=posx;
-            obj.posy=posy;
-            obj.posz=posz;
-            obj.V=V;
-            obj.pathangle=pathangle;
             obj.environment=environment;
             obj.sinkrate=sinkrate;
-            obj.vx = V*cos(pathangle);
-            obj.vy = V*sin(pathangle);
-            obj.vz=obj.sinkrate;
-            
             obj.roll_param = variables.roll_param;
             
-            obj.History.t=0.0;
-            obj.History.p=[posx,posy,posz];
-            obj.History.v=[obj.vx,obj.vy,obj.vz];
-            obj.History.z=[0,0];
-            obj.History.kf.z_exp=zeros(1,2); %TODO Check for shift in time by 1 step
-            obj.History.kf.x = zeros(1,4);
-            obj.History.kf.x_xy_glob = zeros(1,2);
-            obj.History.kf.P = zeros(1,4);
+            reset_state(obj, posx, posy, posz, V, pathangle);
+            reset_history(obj);
+        end
+        
+        function reset(this, posx, posy, posz, V, pathangle, execution_frequency, Waypoints, nr_iterations)
+            this.controller=FlightController(this.controller.variables, this.sinkrate,posx,posy,posz,V,pathangle,@this.print,execution_frequency,Waypoints);
+            reset_state(this, posx, posy, posz, V, pathangle);
+            reset_history(this, nr_iterations);
+        end
+        function reset_state(this, posx, posy, posz, V, pathangle)
+            this.posx=posx;
+            this.posy=posy;
+            this.posz=posz;
+            this.V=V;
+            this.pathangle=pathangle;
+            this.vx = V*cos(pathangle);
+            this.vy = V*sin(pathangle);
+            this.vz=this.sinkrate;
+            this.previous_time=0;
+            this.landed=0;
+        end
+        function reset_history(this, nr_iterations)
+            if (nargin<2)
+                nr_iterations = 0; %Do not pre-initialize history arrays then...
+            end
+            
+            save_memory = true; %TODO HACK
+            if(save_memory) nr_iterations = nr_iterations / 4; end
+            
+            this.History.idx = 1;
+            this.History.t=[0.0, zeros(1,nr_iterations)];
+            this.History.p=[this.posx,this.posy,this.posz ; zeros(nr_iterations,3)];
+            this.History.v=[this.vx,this.vy,this.vz ; zeros(nr_iterations,3)];
+            this.History.z=[0,0 ; zeros(nr_iterations,2)];
+            this.History.kf.z_exp=[zeros(1,2) ; zeros(nr_iterations,2)];
+            this.History.kf.x = [zeros(1,4) ; zeros(nr_iterations,4)];
+            this.History.kf.x_xy_glob = [zeros(1,2) ; zeros(nr_iterations,2)];
+            this.History.kf.P = [zeros(1,4) ; zeros(nr_iterations,4)];
         end
         function update(obj,time)
             if obj.posz<0
@@ -84,16 +104,21 @@ classdef Aircraft < handle
             
             obj.controller.update(measurements,obj.posx,obj.posy,obj.posz,obj.pathangle,obj.V,time);
 
-            %Update history
-            obj.History.t(end+1) = time;
-            obj.History.p(end+1,:) = [obj.posx,obj.posy,obj.posz];
-            obj.History.v(end+1,:) = [obj.vx,obj.vy,obj.vx];
-            obj.History.z(end+1,:) = measurements;
-            obj.History.kf.z_exp(end+1,:) = obj.controller.kf.z_exp';
-            obj.History.kf.x(end+1,:) = obj.controller.kf.x';
-            obj.History.kf.x_xy_glob(end+1,:) = obj.controller.est_thermal_pos;
-            obj.History.kf.P(end+1,:) = [obj.controller.kf.P(1,1) obj.controller.kf.P(2,2) obj.controller.kf.P(3,3) obj.controller.kf.P(4,4)];
-
+            %Update history. Note that the memory for the arrays is
+            %usually pre-allocated, but matlab extends it automatically if required...
+            saveMemory = true; %TODO Hack
+            if(saveMemory && mod(time,0.2)<0.05)
+                obj.History.idx=obj.History.idx+1;
+                obj.History.t(obj.History.idx) = time;
+                obj.History.p(obj.History.idx,:) = [obj.posx,obj.posy,obj.posz];
+                obj.History.v(obj.History.idx,:) = [obj.vx,obj.vy,obj.vx];
+                obj.History.z(obj.History.idx,:) = measurements;
+                obj.History.kf.z_exp(obj.History.idx,:) = obj.controller.kf.z_exp';
+                obj.History.kf.x(obj.History.idx,:) = obj.controller.kf.x';
+                obj.History.kf.x_xy_glob(obj.History.idx,:) = obj.controller.est_thermal_pos;
+                obj.History.kf.P(obj.History.idx,:) = [obj.controller.kf.P(1,1) obj.controller.kf.P(2,2) obj.controller.kf.P(3,3) obj.controller.kf.P(4,4)];
+            end
+            
             %Update state
             obj.posx = obj.posx + deltaT*obj.vx;
             obj.posy = obj.posy + deltaT*obj.vy;
