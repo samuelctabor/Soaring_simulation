@@ -51,6 +51,8 @@ classdef Simulation < handle
             variables.process_noise_q1      =       0.001; %This is the standard deviation for W
             variables.process_noise_q2      =       0.1; %This is the standard deviation for R
             variables.process_noise_q3      =       0.2; %This is the standard deviation for x,y
+            variables.kf_x_init             =       [1.5 80 30]; %Kalman filter initial state. Note that x_init(3) is just the distance from the current aircraft position
+            variables.kf_P_init             =       diag([2^2 80^2 100^2 100^2]); %Kalman filter initial covariance
             variables.thermalling_radius =          20;
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)

@@ -112,11 +112,6 @@ classdef FlightController < handle
         function SetupKalmanFilter(this,execution_frequency)
             %-------------------------%
             %----Set up ekf/ukf-------%
-            n=4;
-            m=2;
-            x=[5;15;-5;0];                                   % inital state estimate
-            P = diag([1 10 100 100]);    %Initial state unknown so large variance
-            
             q_temp = [this.variables.process_noise_q1, this.variables.process_noise_q2, this.variables.process_noise_q3, this.variables.process_noise_q3]; 
             Q = (diag(q_temp)*execution_frequency/this.variables.filter_rate)^2; %Covariance of process
             
@@ -124,10 +119,10 @@ classdef FlightController < handle
             R = diag(r_temp)^2;
             
             if(this.KFtype==1) 
-                this.kf=ExtendedKalmanFilter_thermal(P,x,Q,R);
+                this.kf=ExtendedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R);
                 if(~this.variables.bSimulateSilently); display('Initialised EKF.'); end;
             elseif(this.KFtype==2) 
-                this.kf=UnscentedKalmanFilter_thermal(P,x,Q,R);
+                this.kf=UnscentedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R);
                 if(~this.variables.bSimulateSilently); display('Initialised UKF.'); end;
             end
 
@@ -222,7 +217,7 @@ classdef FlightController < handle
                         %We reset it to 10m ahead of the aircraft, but give
                         %it a high covariance P so it will adjust quickly.
                         this.print('Filter reset');
-                        this.kf.reset([5;100;cos(this.pathangle)*10;sin(this.pathangle)*10],diag([2, 50, 100, 100]));
+                        this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);cos(this.pathangle)*this.variables.kf_x_init(3);sin(this.pathangle)*this.variables.kf_x_init(3)],this.variables.kf_P_init);
                         this.sm.set(StateMachine.thermalling,t);
                         this.heading_controller.reset_I();
                         this.turnrate=0;
@@ -258,7 +253,7 @@ classdef FlightController < handle
                         if this.lpf.filtered(1) > incentive
                             this.print(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered(1),FlightController.MacCready(this.posz,this.sinkrate)*0.5));
                             this.print('Filter reset');
-                            this.kf.reset([5;100;cos(this.pathangle)*10;sin(this.pathangle)*10],diag([2, 50, 100, 100]));
+                            this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);cos(this.pathangle)*this.variables.kf_x_init(3);sin(this.pathangle)*this.variables.kf_x_init(3)],this.variables.kf_P_init);
                             %obj.sm.set(StateMachine.investigating_straight,t)
                             this.sm.set(StateMachine.thermalling,t);
                             this.heading_controller.reset_I();
