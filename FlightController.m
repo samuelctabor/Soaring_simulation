@@ -101,7 +101,7 @@ classdef FlightController < handle
             %this.sm.set(StateMachine.searching,0);
             this.sm.set(StateMachine.cruising,0);
             
-            max_turnrate = 9.81*this.V*tan(deg2rad(30));
+            max_turnrate = 9.81/this.V*tan(deg2rad(25));
             this.heading_controller = Heading_Controller(variables.k_p,variables.k_d,variables.k_i,max_turnrate);
             this.search_centre = [posx,posy+(5)];
             this.est_thermal_pos = [0,0];
