@@ -303,10 +303,10 @@ classdef FlightController < handle
                 %Fly a spiral pattern
                 angle = atan2(this.search_centre(2)-this.posy,this.search_centre(1)-this.posx);
                 this.nav_bearing = angle - ((pi/2) + this.variables.search_pitch_angle);
-            elseif (StateMachine.thermalling && this.ThermalTrackingActive==true)
+            elseif (this.sm.state==StateMachine.thermalling && this.ThermalTrackingActive==true)
                 %Orbit the thermal centre
                 this.nav_bearing=this.calc_bearing_thermalling(this.kf.x,this.pathangle,this.variables);
-            else %Executed for state StateMachine.cruising and when ThermalTrackingActive==false
+            else %Executed for state StateMachine.cruising and when StateMachine.thermalling && ThermalTrackingActive==false
                 %Navigate towards waypoint
                 wp=this.Waypoints(this.currentWaypoint,:);
                 if (wp(3)==0) %StraightLine WP
