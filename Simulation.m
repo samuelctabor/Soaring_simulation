@@ -54,6 +54,7 @@ classdef Simulation < handle
             variables.kf_x_init             =       [1.5 80 30]; %Kalman filter initial state. Note that x_init(3) is just the distance from the current aircraft position
             variables.kf_P_init             =       diag([2^2 80^2 100^2 100^2]); %Kalman filter initial covariance
             variables.thermalling_radius =          20;
+            variables.ukf_alpha             =       0.01;
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
             % turnrate = (g/V)*tan(phi)

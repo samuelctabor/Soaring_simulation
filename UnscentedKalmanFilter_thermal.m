@@ -24,7 +24,7 @@ classdef UnscentedKalmanFilter_thermal < handle
     end
     
     methods
-        function obj=UnscentedKalmanFilter_thermal(Pinit,xinit,Q,R)
+        function obj=UnscentedKalmanFilter_thermal(Pinit,xinit,Q,R,alpha)
             
             if(verLessThan('matlab','9.1'))
                 DISP('ERROR: Your matlab version is too old to support the Matlab System-ID toolbox unscentendKalmanFilter command. The filter will not be executed!');
@@ -34,19 +34,18 @@ classdef UnscentedKalmanFilter_thermal < handle
                 obj.Execute=false;
             end
             
-            obj.P=Pinit;%?
-            obj.x=xinit;%?
-
-            obj.Q=Q;%?
-            obj.R=R;%?
+            obj.P=Pinit;
+            obj.x=xinit;
+            obj.Q=Q;
+            obj.R=R;
             
             obj.UKF = unscentedKalmanFilter(@StateTransitionFcn,@MeasurementFcn,xinit,'HasAdditiveProcessNoise',true,'HasAdditiveMeasurementNoise',true);
-            %obj.UKF.State = xinit;
             obj.UKF.StateCovariance = Pinit;
             obj.UKF.MeasurementNoise = R;
             obj.UKF.ProcessNoise = Q;
-            obj.UKF.Alpha = 0.05;
-            obj.UKF.Kappa = 0.0;
+            if(nargin>4)
+                obj.UKF.Alpha = alpha;
+            end
         end
         function update(obj,z,Vxdt,Vydt,yaw,rollparam)
             if(obj.Execute==false)
@@ -61,7 +60,6 @@ classdef UnscentedKalmanFilter_thermal < handle
             %Prediction step
             [obj.x, obj.P] = predict(obj.UKF,Vxdt,Vydt); %TODO ? Noise already added or have to pass as arugment?
             
-            
             % Calculate unscented transformation parameters
             [c, Wmean, Wcov, OOM] = matlabshared.tracking.internal.calcUTParameters(obj.UKF.Alpha,obj.UKF.Beta,obj.UKF.Kappa,numel(obj.x));
             [X1,obj.sigma_points] = matlabshared.tracking.internal.calcSigmaPoints(obj.P, obj.x, c);
@@ -70,9 +68,6 @@ classdef UnscentedKalmanFilter_thermal < handle
             obj.z_exp = MeasurementFcn(obj.x, yaw, rollparam);
             obj.residual = z - obj.z_exp;
             [obj.x, obj.P] = correct(obj.UKF,z,yaw,rollparam); 
-            
-            
-            %test = UKFCorrectorAdditive
         end
         function reset(obj,x,P)
             %Reset covariance and state.

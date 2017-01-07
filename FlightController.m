@@ -122,7 +122,7 @@ classdef FlightController < handle
                 this.kf=ExtendedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R);
                 if(~this.variables.bSimulateSilently); display('Initialised EKF.'); end;
             elseif(this.KFtype==2) 
-                this.kf=UnscentedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R);
+                this.kf=UnscentedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.ukf_alpha);
                 if(~this.variables.bSimulateSilently); display('Initialised UKF.'); end;
             end
 
