@@ -218,6 +218,7 @@ classdef FlightController < handle
                         %it a high covariance P so it will adjust quickly.
                         this.print('Filter reset');
                         this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);cos(this.pathangle)*this.variables.kf_x_init(3);sin(this.pathangle)*this.variables.kf_x_init(3)],this.variables.kf_P_init);
+                        this.est_thermal_pos = [this.posx+this.kf.x(3),this.posy+this.kf.x(4)];
                         this.sm.set(StateMachine.thermalling,t);
                         this.heading_controller.reset_I();
                         this.turnrate=0;
@@ -254,6 +255,7 @@ classdef FlightController < handle
                             this.print(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered(1),FlightController.MacCready(this.posz,this.sinkrate)*0.5));
                             this.print('Filter reset');
                             this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);cos(this.pathangle)*this.variables.kf_x_init(3);sin(this.pathangle)*this.variables.kf_x_init(3)],this.variables.kf_P_init);
+                            this.est_thermal_pos = [this.posx+this.kf.x(3),this.posy+this.kf.x(4)];
                             %obj.sm.set(StateMachine.investigating_straight,t)
                             this.sm.set(StateMachine.thermalling,t);
                             this.heading_controller.reset_I();
