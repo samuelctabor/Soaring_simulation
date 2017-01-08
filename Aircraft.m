@@ -67,9 +67,7 @@ classdef Aircraft < handle
                 nr_iterations = 0; %Do not pre-initialize history arrays then...
             end
             
-            save_memory = true; %TODO HACK
-            if(save_memory) nr_iterations = nr_iterations / 4; end
-            
+            if(this.controller.variables.SaveReducedHistory) nr_iterations = nr_iterations/4; end
             this.History.idx = 1;
             this.History.t=[0.0, zeros(1,nr_iterations)];
             this.History.p=[this.posx,this.posy,this.posz ; zeros(nr_iterations,3)];
@@ -106,8 +104,7 @@ classdef Aircraft < handle
 
             %Update history. Note that the memory for the arrays is
             %usually pre-allocated, but matlab extends it automatically if required...
-            saveMemory = true; %TODO Hack
-            if(saveMemory && mod(time,0.2)<0.05)
+            if(~obj.controller.variables.SaveReducedHistory || mod(time,0.2)<0.05)
                 obj.History.idx=obj.History.idx+1;
                 obj.History.t(obj.History.idx) = time;
                 obj.History.p(obj.History.idx,:) = [obj.posx,obj.posy,obj.posz];

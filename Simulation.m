@@ -57,6 +57,7 @@ classdef Simulation < handle
             variables.ukf_alpha             =       0.01;
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
+            variables.SaveReducedHistory    =       true;
             % turnrate = (g/V)*tan(phi)
 
             variables.search_pitch_angle =          deg2rad(5.0);
