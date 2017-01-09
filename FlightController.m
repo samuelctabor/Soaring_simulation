@@ -17,6 +17,7 @@ classdef FlightController < handle
         currentWaypoint=1;
         ThermalTrackingActive=true;
         KFtype=1; % EKF=1, UKF=2
+        thermal_estimate_updated=false;
     end
     properties (SetAccess=protected)
         variables;              %Holds the variables we want to be configurable
@@ -152,22 +153,21 @@ classdef FlightController < handle
             
             %Update the Kalman filter
             if this.sm.state==StateMachine.thermalling
-                % Only execute Kalman filter every x-th (filter_skips)
-                % iteration
                 if (mod(this.filter_iterations,this.filter_skips)==0)
-                %if 1 %((mod(this.current_time,0.1)<1e-6)||(mod(this.current_time,0.1)>0.099))
-                    %this.kf.update(measurements,V*this.deltaT*cos(this.pathangleold),V*this.deltaT*sin(this.pathangleold));
+                    % Only execute Kalman filter every x-th (filter_skips) iteration
                     this.kf.update(measurements,this.posx-this.prev_posx,this.posy-this.prev_posy,pathangle,this.variables.roll_param);
 
                     this.prev_posx = this.posx;
                     this.prev_posy = this.posy;
                     this.prev_posz = this.posz;
                     
-                    %Estimated global position of thermal
+                    %Estimated global position of thermal and sigma-points/particles
                     this.est_thermal_pos = [posx+this.kf.x(3),posy+this.kf.x(4)];
-                    if(this.KFtype == 2)
-                        this.sigma_points_glob = [this.kf.x, this.kf.sigma_points]+ [0 0 posx posy]';
+                    if(this.KFtype == 2) this.sigma_points_glob = [this.kf.x, this.kf.sigma_points]+ [0 0 posx posy]';
+                    elseif(this.KFtype == 3) this.sigma_points_glob = this.kf.PF.Particles' + [0 0 posx posy]';
                     end
+                    
+                    this.thermal_estimate_updated = true;
                 end
                 %obj.print(sprintf('Cov %f %f %f %f',obj.kf.P(1,1),obj.kf.P(2,2),obj.kf.P(3,3),obj.kf.P(4,4)));
                 this.filter_iterations = this.filter_iterations+1;

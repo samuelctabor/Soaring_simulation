@@ -135,23 +135,27 @@ classdef Aircraft < handle
             obj.previous_time = time;
         end
         function Display(obj,axis)
-            obj.Clear();
             colours = (obj.vz(1) + 10)/(10--10);
             colours = max(min(colours,1.0),0.0);
             C=colormap(axis,'jet');
             colours=ceil(colours*(length(C)-1)+1);
+
+            obj.Clear();
             obj.h_patch=Aircraft.display_ac_patch(axis,obj.posx,obj.posy,obj.posz,C(colours,:),obj.pathangle);
             switch obj.controller.sm.state
                 case StateMachine.thermalling
                     [obj.h_objective(1),obj.h_objective(2)]=Aircraft.display_objective(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posx,obj.posy,obj.posz,'r:^','r-.');
                     if(obj.controller.ThermalTrackingActive==false) [obj.h_objective(3),obj.h_objective(4)]=Aircraft.display_objective(axis,obj.controller.Waypoints(obj.controller.currentWaypoint,1),obj.controller.Waypoints(obj.controller.currentWaypoint,2),obj.posx,obj.posy,obj.posz,'b:^','b-.'); end;
-                    obj.h_thermal = Aircraft.display_thermal_cov(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posz,obj.controller.kf.P(3,3),obj.controller.kf.P(4,4));
+                    
+                    if(obj.controller.thermal_estimate_updated)
+                        obj.controller.thermal_estimate_updated = false;
+                        obj.h_thermal = Aircraft.display_thermal_cov(axis,obj.controller.est_thermal_pos(1),obj.controller.est_thermal_pos(2),obj.posz,obj.controller.kf.P(3,3),obj.controller.kf.P(4,4));
 
-                    %If the UKF is active, plot the (valid) sigma points
-                    if(obj.controller.KFtype==2 && numel(obj.controller.kf.sigma_points)>0)
-                        obj.h_sigmaPoints = plot(axis,obj.controller.sigma_points_glob(3,1),obj.controller.sigma_points_glob(4,1),'o','MarkerSize',obj.controller.sigma_points_glob(2,1)/max(obj.controller.sigma_points_glob(2,:))*5.0);
-                        for i = 2:2*numel(obj.controller.kf.x)+1
-                            obj.h_sigmaPoints(end+1) = plot(axis,obj.controller.sigma_points_glob(3,i),obj.controller.sigma_points_glob(4,i),'o','MarkerSize',obj.controller.sigma_points_glob(2,i)/max(obj.controller.sigma_points_glob(2,:))*5.0);
+                        %If the UKF or the PF is active, plot the (valid) sigma points or particles
+                        if(obj.controller.KFtype==2 || obj.controller.KFtype==3)
+                            obj.h_sigmaPoints = zeros(0);
+                            num_points_to_plot = size(obj.controller.sigma_points_glob,2);
+                            if(num_points_to_plot>0) obj.h_sigmaPoints = plot(axis,obj.controller.sigma_points_glob(3,:),obj.controller.sigma_points_glob(4,:),'o','MarkerSize',3); end;
                         end
                     end
                 case StateMachine.searching
@@ -181,8 +185,10 @@ classdef Aircraft < handle
                 obj.h_objective = [];
                 delete(obj.h_patch);
                 delete(obj.h_map);
-                delete(obj.h_thermal);
-                delete(obj.h_sigmaPoints);
+                if(obj.controller.thermal_estimate_updated)
+                    delete(obj.h_thermal);
+                    delete(obj.h_sigmaPoints);
+                end
             catch
             end
         end
