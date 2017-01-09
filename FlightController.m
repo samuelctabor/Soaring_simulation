@@ -16,7 +16,7 @@ classdef FlightController < handle
         Waypoints;
         currentWaypoint=1;
         ThermalTrackingActive=true;
-        KFtype=1; % EKF=1, UKF=2
+        KFtype=1; % EKF=1, UKF=2, PF=3
         thermal_estimate_updated=false;
     end
     properties (SetAccess=protected)
@@ -121,10 +121,13 @@ classdef FlightController < handle
             
             if(this.KFtype==1) 
                 this.kf=ExtendedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R);
-                if(~this.variables.bSimulateSilently); display('Initialised EKF.'); end;
+                if(~this.variables.bSimulateSilently); display('Initialised Extended Kalman Filter (EKF).'); end;
             elseif(this.KFtype==2) 
                 this.kf=UnscentedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.ukf_alpha);
-                if(~this.variables.bSimulateSilently); display('Initialised UKF.'); end;
+                if(~this.variables.bSimulateSilently); display('Initialised Unscented Kalman Filter (UKF).'); end;
+            elseif(this.KFtype==3) 
+                this.kf=ParticleFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.pf_K);
+                if(~this.variables.bSimulateSilently); display('Initialised Particle Filter (PF).'); end;
             end
 
             %obj.kf=ExtendedKalmanFilter_arduino(P,x,Q,R);

@@ -55,6 +55,7 @@ classdef Simulation < handle
             variables.kf_P_init             =       diag([2^2 80^2 100^2 100^2]); %Kalman filter initial covariance
             variables.thermalling_radius =          20;
             variables.ukf_alpha             =       0.01;
+            variables.pf_K                  =       0.05; %Particle Filter tuning parameter
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
             variables.SaveReducedHistory    =       true;
