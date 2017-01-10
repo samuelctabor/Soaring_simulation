@@ -68,15 +68,15 @@ classdef Aircraft < handle
             end
             
             if(this.controller.variables.SaveReducedHistory) nr_iterations = nr_iterations/4; end
-            this.History.idx = 1;
-            this.History.t=[0.0, zeros(1,nr_iterations)];
-            this.History.p=[this.posx,this.posy,this.posz ; zeros(nr_iterations,3)];
-            this.History.v=[this.vx,this.vy,this.vz ; zeros(nr_iterations,3)];
-            this.History.z=[0,0 ; zeros(nr_iterations,2)];
-            this.History.kf.z_exp=[zeros(1,2) ; zeros(nr_iterations,2)];
-            this.History.kf.x = [zeros(1,4) ; zeros(nr_iterations,4)];
-            this.History.kf.x_xy_glob = [zeros(1,2) ; zeros(nr_iterations,2)];
-            this.History.kf.P = [zeros(1,4) ; zeros(nr_iterations,4)];
+            this.History.idx = 0;
+            this.History.t = zeros(1,nr_iterations);
+            this.History.p = zeros(nr_iterations,3);
+            this.History.v = zeros(nr_iterations,3);
+            this.History.z = zeros(nr_iterations,2);
+            this.History.kf.z_exp = zeros(nr_iterations,2);
+            this.History.kf.x = zeros(nr_iterations,4);
+            this.History.kf.x_xy_glob = zeros(nr_iterations,2);
+            this.History.kf.P = zeros(nr_iterations,4);
         end
         function update(obj,time)
             if obj.posz<0

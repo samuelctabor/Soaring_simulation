@@ -59,7 +59,7 @@ handles.output = hObject;
 
 handles.mytimer = timer('Period',0.04,'TimerFcn',{@update,hObject,handles},'ExecutionMode','fixedRate','BusyMode','drop');%,'BusyMode','queue');
 
-handles.simulation = Simulation(handles.axes1);
+handles.simulation = Simulation(handles.axes1,true);
 
 set(gcf,'CloseRequestFcn',@my_closefcn);
 %handles.x=5;

@@ -13,6 +13,7 @@ classdef Simulation < handle
     properties
         TheAircraft
         axis
+        visualizeSimulation=false;
         environment
         AcPlotHandles;
         ETPlotHandles
@@ -25,10 +26,19 @@ classdef Simulation < handle
     end
     
     methods
-        function obj=Simulation(axis_to_use)
+        function obj=Simulation(varargin)
+
             fprintf('Initialising simulation...\n');
             
-            set(axis_to_use,'ButtonDownFcn',@obj.axis_clicked_fcn);
+            axis_to_use = [];
+            if (nargin == 1)
+                axis_to_use = varargin{1};
+            elseif(nargin == 2)
+                axis_to_use = varargin{1};
+                obj.visualizeSimulation = varargin{2};
+            end
+
+            if(obj.visualizeSimulation) set(axis_to_use,'ButtonDownFcn',@obj.axis_clicked_fcn); end;
             
             pathangle = 0;
             
@@ -54,7 +64,7 @@ classdef Simulation < handle
             variables.kf_x_init             =       [1.5 80 30]; %Kalman filter initial state. Note that x_init(3) is just the distance from the current aircraft position
             variables.kf_P_init             =       diag([2^2 80^2 100^2 100^2]); %Kalman filter initial covariance
             variables.thermalling_radius =          20;
-            variables.ukf_alpha             =       0.01;
+            variables.ukf_alpha             =       0.01; %Unscented Kalman Filter tuning parameter
             variables.pf_K                  =       0.05; %Particle Filter tuning parameter
             variables.roll_param            =       20.9537; %Techpod at nominal airspeed
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
@@ -72,13 +82,15 @@ classdef Simulation < handle
             variables.k_d =                         0.0;
             variables.k_i =                         0.01;
 
-            obj.axis=axis_to_use;
+            if(obj.visualizeSimulation) obj.axis=axis_to_use; end;
             
             
             %figure;
-            hold(obj.axis,'on');
-            set(obj.axis, 'CameraViewAngle', get(obj.axis,'CameraViewAngle'));
-            axis(obj.axis,'equal');
+            if(obj.visualizeSimulation)
+                hold(obj.axis,'on');
+                set(obj.axis, 'CameraViewAngle', get(obj.axis,'CameraViewAngle'));
+                axis(obj.axis,'equal');
+            end
             %obj.axis=gca;
             t=0;
             %grid on;
@@ -118,7 +130,7 @@ classdef Simulation < handle
                 obj.TheAircraft(i).update(obj.currenttime+dt);
             end
             
-            if(~bSimulateSilently)
+            if(obj.visualizeSimulation && ~bSimulateSilently)
                 title(obj.axis,sprintf('Time: %4.1f seconds',obj.currenttime));
                 for i=1:length(obj.TheAircraft)
                     obj.TheAircraft(i).Display(obj.axis);
