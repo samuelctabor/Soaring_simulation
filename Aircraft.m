@@ -55,6 +55,7 @@ classdef Aircraft < handle
             this.posy=posy;
             this.posz=posz;
             this.V=V;
+            this.sinkrate = 0.36;%this.V/10.0;
             this.pathangle=pathangle;
             this.vx = V*cos(pathangle);
             this.vy = V*sin(pathangle);

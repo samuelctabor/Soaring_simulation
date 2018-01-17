@@ -105,8 +105,10 @@ function runbutton_Callback(hObject, eventdata, handles)
 %if (handles.mytimer.
 if (strcmp(handles.mytimer.Running,'off'))
     start(handles.mytimer);
+    hObject.String='Pause simulation';
 else
     stop(handles.mytimer);
+    hObject.String='Resume simulation';
 end
 guidata(hObject, handles);
 

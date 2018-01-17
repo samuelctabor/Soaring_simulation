@@ -20,7 +20,7 @@ classdef ParticleFilter_thermal < handle
         K=0;
         PF;
         Execute=true;
-        NumParticles=1000;
+        NumParticles=5000;
     end
     
     methods

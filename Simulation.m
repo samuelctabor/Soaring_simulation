@@ -42,7 +42,7 @@ classdef Simulation < handle
             
             pathangle = 0;
             
-            V=19.6;
+            V=9.3;
             
             sinkrate=V/10;
             
@@ -51,22 +51,24 @@ classdef Simulation < handle
             %------------------------------%
             variables.search_latch_threshhold=      0.5*sinkrate;
             variables.cruise_latch_threshhold=      2.0*sinkrate;
-            variables.ceiling =                     400;
+            variables.ceiling =                     1200;
             variables.begin_search_altitude =       -0;
             variables.filter_rate           =       5; %Kalman Filtering frequency [Hz]
             variables.actual_noise          =       0.0;
             variables.actual_noise_z2       =       0.0;
             variables.measurement_noise     =       0.2; %This is the standard deviation
-            variables.measurement_noise_z2  =       10000.1; %This is the standard deviation
+            variables.measurement_noise_z2  =       0.5; %This is the standard deviation. Set to high value to disable.
             variables.process_noise_q1      =       0.001; %This is the standard deviation for W
             variables.process_noise_q2      =       0.1; %This is the standard deviation for R
             variables.process_noise_q3      =       0.2; %This is the standard deviation for x,y
             variables.kf_x_init             =       [1.5 80 30]; %Kalman filter initial state. Note that x_init(3) is just the distance from the current aircraft position
+            variables.kf_x_init_angle_offset=       0;
             variables.kf_P_init             =       diag([2^2 80^2 100^2 100^2]); %Kalman filter initial covariance
-            variables.thermalling_radius =          20;
+            %variables.kf_P_init             =       diag([1^2 10^2 20^2 20^2]); %Kalman filter initial covariance
             variables.ukf_alpha             =       0.01; %Unscented Kalman Filter tuning parameter
             variables.pf_K                  =       0.05; %Particle Filter tuning parameter
-            variables.roll_param            =       20.9537; %Techpod at nominal airspeed
+            variables.thermalling_radius =          40;
+            variables.roll_param            =       137.72; %Techpod at nominal airspeed: 20.95, AtlantikSolar at nominal airspeed: 137.72
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
             variables.SaveReducedHistory    =       true;
             % turnrate = (g/V)*tan(phi)
@@ -83,9 +85,6 @@ classdef Simulation < handle
             variables.k_i =                         0.01;
 
             if(obj.visualizeSimulation) obj.axis=axis_to_use; end;
-            
-            
-            %figure;
             if(obj.visualizeSimulation)
                 hold(obj.axis,'on');
                 set(obj.axis, 'CameraViewAngle', get(obj.axis,'CameraViewAngle'));
@@ -98,9 +97,7 @@ classdef Simulation < handle
             % initial state covraiance
             N=1000;                                          % total dynamic steps
             %xV = zeros(n,N);          %estmate              % allocate memory
-            
             %pV = zeros(3,N);
-            
             %vV=zeros(3,N);
             
             number_thermals = 1;
