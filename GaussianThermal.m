@@ -5,6 +5,9 @@ classdef GaussianThermal
     %   thermal updraft distribution. It is of the form w =
     %   W*exp(-r^2/R^2). The thermal therefore has properties W,R,x and y
     %   representing thermal strength, size, and location.
+    %   The localgradient is used to later on calculate a thermal-induced
+    %   roll moment as described in the Journal of Field Robotics publication
+    %   at www.dx.doi.org/10.1002/rob.21765
     
     properties
         thermalx=0;
