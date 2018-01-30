@@ -25,18 +25,20 @@ classdef Environment < handle
             
             obj.xlim=xlim;
             obj.ylim=ylim;
-            if nargin>5
-                xloc=varargin{1};
-                yloc=varargin{2};
+            if nargin>7
+                xloc = varargin{1};
+                yloc = varargin{2};
+                W    = varargin{3};
+                R    = varargin{4};
             else
                 xloc=xlim(1) + (xlim(2)-xlim(1))*rand(1,number_thermals);
                 yloc=xlim(1) + (ylim(2)-ylim(1))*rand(1,number_thermals);
+                W = 3*ones(size(xloc));
+                R = 20*ones(size(xloc));
             end
             
             for i=1:number_thermals    
-                %h=thermal_type(xloc(i),yloc(i),5,20);
-                h=thermal_type(xloc(i),yloc(i),3,120);
-                %h=thermal_types{ceil(rand(1)*2)}(xloc(i),yloc(i),5,20);
+                h=thermal_type(xloc(i),yloc(i),W(i),R(i));
                 thermals{i}=h;
             end
             obj.Thermals=thermals;

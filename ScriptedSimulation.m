@@ -21,7 +21,7 @@ var3 = 1;%0.1:0.1:0.4;
 set(0,'defaultTextInterpreter','tex');
 scrsz = get(groot,'ScreenSize');
 if(~useParallelSimulation) figure('Name','Sim','Position',[200 scrsz(4)/4 scrsz(3)/3 2*scrsz(4)/3]); end;
-simOrg = Simulation(axes,~useParallelSimulation);
+simOrg = Simulation(gca,~useParallelSimulation,0,0,3,120);
 bSilent=true;
 nr_iterations = 100*simOrg.execution_frequency;
 results = cell(numel(var3), numel(var2), numel(var1));
@@ -84,6 +84,12 @@ for l=1:numel(var3)
                 sim(s).TheAircraft.controller.update_variable('process_noise_q3',q3);%0.4);
                 sim(s).TheAircraft.controller.update_variable('pf_K',0.05);
                 sim(s).TheAircraft.controller.update_variable('ukf_alpha',0.1);
+                sim(s).TheAircraft.controller.update_variable('ceiling',1200);
+                sim(s).TheAircraft.controller.update_variable('thermalling_radius',40);
+                sim(s).TheAircraft.controller.update_variable('P_init',diag([2^2,80^2,100^2,100^2]));
+
+                sims(s).environment.Thermals(1).radius = 120;
+                
                 sim(s).TheAircraft.controller.SetupKalmanFilter(sim(s).execution_frequency);
                 sim(s).currenttime=0;
 

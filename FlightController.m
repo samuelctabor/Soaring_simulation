@@ -119,13 +119,13 @@ classdef FlightController < handle
             r_temp = [this.variables.measurement_noise, this.variables.measurement_noise_z2];
             R = diag(r_temp.^2);
             
-            if(this.KFtype==1) 
+            if(this.KFtype==1)
                 this.kf=ExtendedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R);
                 if(~this.variables.bSimulateSilently); display('Initialised Extended Kalman Filter (EKF).'); end;
-            elseif(this.KFtype==2) 
+            elseif(this.KFtype==2)
                 this.kf=UnscentedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.ukf_alpha);
                 if(~this.variables.bSimulateSilently); display('Initialised Unscented Kalman Filter (UKF).'); end;
-            elseif(this.KFtype==3) 
+            elseif(this.KFtype==3)
                 this.kf=ParticleFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.pf_K);
                 if(~this.variables.bSimulateSilently); display('Initialised Particle Filter (PF).'); end;
             end
@@ -238,7 +238,7 @@ classdef FlightController < handle
                             this.sm.set(StateMachine.cruising,t);
                             this.heading_controller.reset_I();
                             this.turnrate=0;
-                        elseif (this.thermalability<0.0 || this.lpf.filtered(1) < -0.1)%(this.thermalability<0.3 || this.lpf.filtered(1) < 0.2)%FlightController.MacCready(this.posz,this.sinkrate))
+                        elseif (this.thermalability<FlightController.MacCready(this.posz,this.sinkrate))
                             this.print(sprintf('MacCready speed not met (%2.2f/%2.2f)',this.thermalability,FlightController.MacCready(this.posz,this.sinkrate)));
                             this.add_estimate_to_map();
                             this.sm.set(StateMachine.cruising,t);
@@ -257,7 +257,11 @@ classdef FlightController < handle
                         if this.lpf.filtered(1) > incentive
                             this.print(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered(1),FlightController.MacCready(this.posz,this.sinkrate)*0.5));
                             this.print('Filter reset');
-                            this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);cosd(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3);sind(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3)],this.variables.kf_P_init); %Note: cosd(rad2deg... is used to circumvent mathematical precision problems, e.g. cos(pi()/2)!=0 in matlab
+                            this.kf.reset([this.variables.kf_x_init(1);...
+                                           this.variables.kf_x_init(2);...
+                                           cosd(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3);...
+                                           sind(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3)],...
+                                           this.variables.kf_P_init); %Note: cosd(rad2deg... is used to circumvent mathematical precision problems, e.g. cos(pi()/2)!=0 in matlab
                             this.est_thermal_pos = [this.posx+this.kf.x(3),this.posy+this.kf.x(4)];
                             %obj.sm.set(StateMachine.investigating_straight,t)
                             this.sm.set(StateMachine.thermalling,t);

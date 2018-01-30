@@ -33,9 +33,29 @@ classdef Simulation < handle
             axis_to_use = [];
             if (nargin == 1)
                 axis_to_use = varargin{1};
-            elseif(nargin == 2)
+            elseif(nargin >= 2)
                 axis_to_use = varargin{1};
                 obj.visualizeSimulation = varargin{2};
+            end
+            
+            if nargin>=6
+                number_thermals = length(varargin{4});
+                X = varargin{3};
+                Y = varargin{4};
+                W = varargin{5};
+                R = varargin{6};
+            else
+                number_thermals = 5;
+                X = [-70,  -20, 70,  0,  0];
+                Y = [-60,  -20,  0, 50,-20];
+                W = [  3,    3,  3,  3,  3];
+                R = [ 20,   20, 20, 20, 20];
+            end
+            
+            if nargin>=7
+                size = varargin{7};
+            else
+                size = 100;
             end
 
             if(obj.visualizeSimulation) set(axis_to_use,'ButtonDownFcn',@obj.axis_clicked_fcn); end;
@@ -51,7 +71,7 @@ classdef Simulation < handle
             %------------------------------%
             variables.search_latch_threshhold=      0.5*sinkrate;
             variables.cruise_latch_threshhold=      2.0*sinkrate;
-            variables.ceiling =                     1200;
+            variables.ceiling =                     400;
             variables.begin_search_altitude =       -0;
             variables.filter_rate           =       5; %Kalman Filtering frequency [Hz]
             variables.actual_noise          =       0.0;
@@ -63,18 +83,18 @@ classdef Simulation < handle
             variables.process_noise_q3      =       0.2; %This is the standard deviation for x,y
             variables.kf_x_init             =       [1.5 80 30]; %Kalman filter initial state. Note that x_init(3) is just the distance from the current aircraft position
             variables.kf_x_init_angle_offset=       0;
-            variables.kf_P_init             =       diag([2^2 80^2 100^2 100^2]); %Kalman filter initial covariance
+            variables.kf_P_init             =       diag([2,10,20,20]);%diag([0.5^2 10^2 18^2 18^2]); %Kalman filter initial covariance
             %variables.kf_P_init             =       diag([1^2 10^2 20^2 20^2]); %Kalman filter initial covariance
             variables.ukf_alpha             =       0.01; %Unscented Kalman Filter tuning parameter
             variables.pf_K                  =       0.05; %Particle Filter tuning parameter
-            variables.thermalling_radius =          40;
+            variables.thermalling_radius =          10;
             variables.roll_param            =       137.72; %Techpod at nominal airspeed: 20.95, AtlantikSolar at nominal airspeed: 137.72
             variables.bSimulateSilently     =       false; %Set to true to avoid all output (drawing & text)
             variables.SaveReducedHistory    =       true;
             % turnrate = (g/V)*tan(phi)
 
             variables.search_pitch_angle =          deg2rad(5.0);
-            variables.min_thermal_latch_time=       5;
+            variables.min_thermal_latch_time=       10;
 
             variables.floor=                        0;
             variables.Waypointtol                  =5;
@@ -92,23 +112,18 @@ classdef Simulation < handle
             end
             %obj.axis=gca;
             t=0;
-            %grid on;
-            size=250;
+            grid on;
+            
             % initial state covraiance
             N=1000;                                          % total dynamic steps
             %xV = zeros(n,N);          %estmate              % allocate memory
             %pV = zeros(3,N);
             %vV=zeros(3,N);
+           
             
-            number_thermals = 1;
-            X = 0;
-            Y = 0;
-            %X = [-70,  -20, 70, 0 , 0 ];
-            %Y = [-60,  -20, 0,  50, -20];
-            
-            obj.environment=Environment([-size,size],[-size,size],number_thermals,@GaussianThermal,obj.axis,X,Y);
-            %obj.environment=Environment_grid([-size,size],[-size,size],450,@FlightGearThermal,obj.axis,X,Y);
-            %obj.environment=Environment_random([-size,size],[-size,size],5,@FlightGearThermal,obj.axis,X,Y);
+            obj.environment=Environment([-size,size],[-size,size],number_thermals,@GaussianThermal,obj.axis,X,Y,W,R);
+            %obj.environment=Environment_grid([-size,size],[-size,size],450,@FlightGearThermal,obj.axis,X,Y,W,R);
+            %obj.environment=Environment_random([-size,size],[-size,size],5,@FlightGearThermal,obj.axis,X,Y,W,R);
             obj.environment.print;
 
             Points{1} = [-100,100,0; -100,-100,0]; %Straight line up
@@ -116,8 +131,9 @@ classdef Simulation < handle
             Points{3} = [-100,100,0; -0,-50,1]; %Straight line up then open loop loiter near center
             ChooseWaypointsNr = 3;
             
-            obj.TheAircraft=Aircraft(-100,-100,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 1',obj.execution_frequency,Points{ChooseWaypointsNr});
-            %aircraft2=Aircraft(-70,-50,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 2');
+            aircraft1=Aircraft(-100,-100,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 1',obj.execution_frequency,Points{ChooseWaypointsNr});
+            aircraft2=Aircraft( -50,-100,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 2',obj.execution_frequency,Points{ChooseWaypointsNr});
+            obj.TheAircraft=[aircraft1];%, aircraft2];
         end
         
         function Update(obj,dt,bSimulateSilently)
