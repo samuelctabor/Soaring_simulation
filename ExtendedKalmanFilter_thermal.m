@@ -41,7 +41,13 @@ classdef ExtendedKalmanFilter_thermal < handle
             
             %What measurement do we expect to receive in the estimated
             %state
-            [ekf.z_exp,H]=ekf.jacobian_h(x1,yaw,rollparam);    
+            [z_exp,H]=ekf.jacobian_h(x1,yaw,rollparam);
+            if numel(z)==1
+               H = H(1,:);
+               ekf.z_exp = z_exp(1);
+            else
+               ekf.z_exp = z_exp;
+            end
             
             %Calculate the KALMAN GAIN
             P12=P*H';                                   %cross covariance
