@@ -77,7 +77,7 @@ classdef Simulation < handle
             variables.actual_noise          =       0.0;
             variables.actual_noise_z2       =       0.0;
             variables.measurement_noise     =       0.2; %This is the standard deviation
-            variables.measurement_noise_z2  =       0.5; %This is the standard deviation. Set to high value to disable.
+            variables.measurement_noise_z2  =       1e6 ; %This is the standard deviation. Set to high value to disable.
             variables.process_noise_q1      =       0.001; %This is the standard deviation for W
             variables.process_noise_q2      =       0.1; %This is the standard deviation for R
             variables.process_noise_q3      =       0.2; %This is the standard deviation for x,y

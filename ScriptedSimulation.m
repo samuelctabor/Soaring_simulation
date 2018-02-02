@@ -87,7 +87,8 @@ for l=1:numel(var3)
                 sim(s).TheAircraft.controller.update_variable('ceiling',1200);
                 sim(s).TheAircraft.controller.update_variable('thermalling_radius',40);
                 sim(s).TheAircraft.controller.update_variable('P_init',diag([2^2,80^2,100^2,100^2]));
-
+                sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',0.5);
+                
                 sims(s).environment.Thermals(1).radius = 120;
                 
                 sim(s).TheAircraft.controller.SetupKalmanFilter(sim(s).execution_frequency);
