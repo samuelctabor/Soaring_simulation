@@ -129,7 +129,7 @@ classdef Simulation < handle
             Points{1} = [-100,100,0; -100,-100,0]; %Straight line up
             Points{2} = [-50,100,0; 50,-100,0 ; 150,100,0]; %Zick-Zack
             Points{3} = [-100,100,0; -0,-50,1]; %Straight line up then open loop loiter near center
-            ChooseWaypointsNr = 3;
+            ChooseWaypointsNr = 2;
             
             aircraft1=Aircraft(-100,-100,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 1',obj.execution_frequency,Points{ChooseWaypointsNr});
             aircraft2=Aircraft( -50,-100,200,V,pathangle,variables,sinkrate,obj.environment,'Aircraft 2',obj.execution_frequency,Points{ChooseWaypointsNr});

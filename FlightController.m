@@ -96,7 +96,7 @@ classdef FlightController < handle
             this.lpf = LowPassFilter(0.9);
             
             this.map = ThermalMap(@this.print);
-            this.pf = PathFinder(this.map);
+            this.pf = PathFinder(this.map, @this.print);
             
             this.sm=StateMachine(@this.print);
             %this.sm.set(StateMachine.searching,0);
@@ -296,7 +296,7 @@ classdef FlightController < handle
                         this.print(sprintf('Waypoint %d next',this.currentWaypoint));
                         this.heading_controller.reset_I();
                     end
-                    %newpath=pf.plan([this.posx,this.posy,this.posz],[80,80,10])
+                    newpath=this.pf.plan([this.posx,this.posy,this.posz],[80,80,10]);
                     %Now the actual route array should be updated
                 end
             end
@@ -330,6 +330,7 @@ classdef FlightController < handle
         function add_estimate_to_map(this)
             this.map.add_data_point_filter(this.posx,this.posy,this.kf.x,this.kf.P);
         end
+
     end
     
     methods (Static)
