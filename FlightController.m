@@ -96,7 +96,7 @@ classdef FlightController < handle
             this.lpf = LowPassFilter(0.9);
             
             this.map = ThermalMap(@this.print);
-            this.pf = PathFinder(this.map);
+            this.pf = PathFinder(this.map, @this.print);
             
             this.sm=StateMachine(@this.print);
             %this.sm.set(StateMachine.searching,0);

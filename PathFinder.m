@@ -6,11 +6,13 @@ classdef PathFinder
     
     properties
         map;
+        printfnct;
     end
     
     methods
-        function pf = PathFinder(map)
+        function pf = PathFinder(map, func)
             pf.map = map;
+            pf.printfnct = func;
         end
         function path_3d = plan(this, pos, goal)
             % using mostly code from Thermal_path.m
@@ -23,7 +25,7 @@ classdef PathFinder
             LoDmax=2;
             cruise_spd=5;
             
-            fprintf('Forming graph\n');
+            this.print('Forming graph');
             [G, nodes_xyz] = Graph_from_Thermals(thermals_pos,thermals_strength,100,0,start_pos,goal_pos, LoDmax, cruise_spd, 5);
             
             for i=1:size(G,1)
@@ -34,7 +36,7 @@ classdef PathFinder
                 end
             end
             
-            fprintf('Solving path\n');
+            this.print('Solving path');
             [path, score] = A_star_alg(G,1,2,nodes_xyz);
             
             for i=1:length(path)-1
@@ -47,6 +49,9 @@ classdef PathFinder
             
         end
         
+        function print(this, message)
+            this.printfnct(['PF: ', message]);
+        end
     end
     methods (Static)
         function [positions,strengths]=map_to_arrays(map)
