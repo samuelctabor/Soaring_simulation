@@ -30,10 +30,12 @@ classdef Aircraft < handle
         h_map;
         h_sigmaPoints;
         landed=0;
+        variables;
     end
     methods
         function obj=Aircraft(posx,posy,posz,V,pathangle,variables,sinkrate,environment,name,execution_frequency, Waypoints)
             obj.name=name;
+            obj.variables = variables;
             obj.controller=FlightController(variables,sinkrate,posx,posy,posz,V,pathangle,@obj.print,execution_frequency, Waypoints);
             obj.updraftsensor = Variometer(variables.actual_noise);
             obj.gradientsensor = RollMomentSensor(variables.actual_noise_z2);
@@ -177,7 +179,9 @@ classdef Aircraft < handle
                 obj.controller.kf.P(1,1),obj.controller.kf.P(2,2),obj.controller.kf.P(3,3),obj.controller.kf.P(4,4)));
         end
         function print(obj, message)
-            fprintf('%s: %s\n',obj.name,message);
+             if(~obj.variables.bSimulateSilently)
+                fprintf('%s: %s\n',obj.name,message);
+             end
         end
         function Clear(obj)
             try

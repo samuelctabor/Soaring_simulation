@@ -88,7 +88,8 @@ classdef FlightController < handle
             
             this.variables=variables;
             this.printfnct=printfnct;
-            if(~this.variables.bSimulateSilently); this.printfnct('Initialised'); end;
+            
+            this.printfnct('Initialised');
             
             %Derivative variables
             this.sinkrate=sinkrate;
@@ -121,19 +122,13 @@ classdef FlightController < handle
             
             if(this.KFtype==1)
                 this.kf=ExtendedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) this.posx this.posy],Q,R);
-                if (~this.variables.bSimulateSilently)
-                    display('Initialised Extended Kalman Filter (EKF).');
-                end
+                this.printfnct('Initialised Extended Kalman Filter (EKF).');
             elseif(this.KFtype==2)
                 this.kf=UnscentedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.ukf_alpha);
-                if (~this.variables.bSimulateSilently)
-                    display('Initialised Unscented Kalman Filter (UKF).');
-                end
+                this.printfnct('Initialised Unscented Kalman Filter (UKF).');
             elseif(this.KFtype==3)
                 this.kf=ParticleFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.pf_K);
-                if (~this.variables.bSimulateSilently)
-                    display('Initialised Particle Filter (PF).');
-                end
+                this.printfnct('Initialised Particle Filter (PF).');
             end
 
             %obj.kf=ExtendedKalmanFilter_arduino(P,x,Q,R);
@@ -227,7 +222,7 @@ classdef FlightController < handle
                         %doesn't have to contend with the old.
                         %We reset it to 10m ahead of the aircraft, but give
                         %it a high covariance P so it will adjust quickly.
-                        this.print('Filter reset');
+                        this.printfnct('Filter reset');
                         this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);this.posx + cos(this.pathangle)*this.variables.kf_x_init(3); this.posy + sin(this.pathangle)*this.variables.kf_x_init(3)],this.variables.kf_P_init);
                         this.est_thermal_pos = [this.posx+this.kf.x(3),this.posy+this.kf.x(4)];
                         this.sm.set(StateMachine.thermalling,t);
@@ -241,13 +236,13 @@ classdef FlightController < handle
                     if (this.sm.elapsed_time(t)>this.variables.min_thermal_latch_time);
                         if (this.posz>this.variables.ceiling)
                             %Altitude limit
-                            this.print('Topped out.');
+                            this.printfnct('Topped out.');
                             this.add_estimate_to_map();
                             this.sm.set(StateMachine.cruising,t);
                             this.heading_controller.reset_I();
                             this.turnrate=0;
                         elseif (this.thermalability<FlightController.MacCready(this.posz,this.sinkrate))
-                            this.print(sprintf('MacCready speed not met (%2.2f/%2.2f)',this.thermalability,FlightController.MacCready(this.posz,this.sinkrate)));
+                            this.printfnct(sprintf('MacCready speed not met (%2.2f/%2.2f)',this.thermalability,FlightController.MacCready(this.posz,this.sinkrate)));
                             this.add_estimate_to_map();
                             this.sm.set(StateMachine.cruising,t);
                             this.heading_controller.reset_I();
@@ -263,8 +258,8 @@ classdef FlightController < handle
                     if this.sm.elapsed_time(t)>this.variables.min_cruise_time
                         incentive = FlightController.MacCready(this.posz,this.sinkrate)*0.5;
                         if this.lpf.filtered(1) > incentive
-                            this.print(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered(1),FlightController.MacCready(this.posz,this.sinkrate)*0.5));
-                            this.print('Filter reset');
+                            this.printfnct(sprintf('Incentive met (%2.2f/%2.2f)',this.lpf.filtered(1),FlightController.MacCready(this.posz,this.sinkrate)*0.5));
+                            this.printfnct('Filter reset');
                             this.kf.reset([this.variables.kf_x_init(1);...
                                            this.variables.kf_x_init(2);...
                                            this.posx + cosd(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3);...
@@ -292,16 +287,16 @@ classdef FlightController < handle
             if(this.sm.state == StateMachine.cruising || (this.sm.state == StateMachine.thermalling && this.ThermalTrackingActive==false))
                 %Do we need to move to next waypoint? 
                 if norm([this.posx,this.posy]-this.Waypoints(this.currentWaypoint,1:2))<this.variables.Waypointtol
-                    this.print(sprintf('Reached waypoint %d',this.currentWaypoint));
+                    this.printfnct(sprintf('Reached waypoint %d',this.currentWaypoint));
                     if (this.currentWaypoint)==size(this.Waypoints,1)
                         %Final waypoint. Start again.
-                        this.print('At final waypoint.');
+                        this.printfnct('At final waypoint.');
                         this.heading_controller.reset_I();
                         this.currentWaypoint=1;
                     else
                         %Go to next waypoint.
                         this.currentWaypoint=this.currentWaypoint+1;
-                        this.print(sprintf('Waypoint %d next',this.currentWaypoint));
+                        this.printfnct(sprintf('Waypoint %d next',this.currentWaypoint));
                         this.heading_controller.reset_I();
                     end
                     %newpath=pf.plan([this.posx,this.posy,this.posz],[80,80,10])
