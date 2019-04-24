@@ -178,6 +178,7 @@ classdef FlightController < handle
                 %obj.print(sprintf('Cov %f %f %f %f',obj.kf.P(1,1),obj.kf.P(2,2),obj.kf.P(3,3),obj.kf.P(4,4)));
                 this.filter_iterations = this.filter_iterations+1;
             end
+            
             %Estimate the climb we can achieve
             this.thermalability=this.calc_thermalability(this.kf.x,this.variables.thermalling_radius);
             
@@ -349,7 +350,7 @@ classdef FlightController < handle
                 nav_bearing = atan2(x(4)-Py,x(3)-Px)+asin(rad/dist);     % Aim for the tangent to the circle
             end
         end
-        function nav_bearing = calc_bearing_cruising(posx,posy,pathangle,destination, variables)
+        function nav_bearing = calc_bearing_cruising(posx,posy,destination)
             nav_bearing = atan2(destination(2)-posy,destination(1)-posx);
         end
         function result = calc_thermalability(x,r)
@@ -374,7 +375,5 @@ classdef FlightController < handle
             v = 2.0*(h/400); %.^0.3;
             vmc = interp1(h,v,alt,'linear') + sinkrate;
         end
-        
     end
 end
-
