@@ -120,14 +120,20 @@ classdef FlightController < handle
             R = diag(r_temp.^2);
             
             if(this.KFtype==1)
-                this.kf=ExtendedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R);
-                if(~this.variables.bSimulateSilently); display('Initialised Extended Kalman Filter (EKF).'); end;
+                this.kf=ExtendedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) this.posx this.posy],Q,R);
+                if (~this.variables.bSimulateSilently)
+                    display('Initialised Extended Kalman Filter (EKF).');
+                end
             elseif(this.KFtype==2)
                 this.kf=UnscentedKalmanFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.ukf_alpha);
-                if(~this.variables.bSimulateSilently); display('Initialised Unscented Kalman Filter (UKF).'); end;
+                if (~this.variables.bSimulateSilently)
+                    display('Initialised Unscented Kalman Filter (UKF).');
+                end
             elseif(this.KFtype==3)
                 this.kf=ParticleFilter_thermal(this.variables.kf_P_init,[this.variables.kf_x_init(1) this.variables.kf_x_init(2) 0 0],Q,R,this.variables.pf_K);
-                if(~this.variables.bSimulateSilently); display('Initialised Particle Filter (PF).'); end;
+                if (~this.variables.bSimulateSilently)
+                    display('Initialised Particle Filter (PF).');
+                end
             end
 
             %obj.kf=ExtendedKalmanFilter_arduino(P,x,Q,R);
@@ -184,14 +190,14 @@ classdef FlightController < handle
             this.distance_to_next_wp = norm([posx-this.Waypoints(this.currentWaypoint,1),posy-this.Waypoints(this.currentWaypoint,2)]);
             
             %Check to see if we should switch to a different flight mode.
-            this.update_state;
+            this.update_state();
             
             %Calculate desired aircraft heading
-            this.determine_heading;
+            this.determine_heading();
             
             %Determine the turn rate (roll angle) required to effect
             %heading
-            this.determine_turnrate;
+            this.determine_turnrate();
             
             %Save this pathangle for the next iteration. In real life
             %should perhaps use an average.
