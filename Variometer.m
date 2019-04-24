@@ -2,7 +2,7 @@ classdef Variometer < handle
     %UpdraftSensor Class to represent a sensor
     %   Sensor has a set covariance
     
-    properties (SetAccess=protected)
+    properties (SetAccess=public)
         estimated_updraft;
         covariance;
     end

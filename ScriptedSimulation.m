@@ -75,24 +75,25 @@ for l=1:numel(var3)
                     q1 = 0.008; q2 = 0.15; q3 = 0.25;
                 end
                 
-                sim(s).TheAircraft.controller.ThermalTrackingActive = false;
-                sim(s).TheAircraft.controller.update_variable('SaveReducedHistory',false);
-                sim(s).TheAircraft.controller.update_variable('bSimulateSilently',true);
-                sim(s).TheAircraft.controller.update_variable('kf_x_init',[1.5 80 30]);
-                sim(s).TheAircraft.controller.update_variable('measurement_noise',00000.4);
-                sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',000000.5);
+                sim(s).TheAircraft.controller.ThermalTrackingActive = true;
+                sim(s).TheAircraft.controller.update_variable('SaveReducedHistory',     false);
+                sim(s).TheAircraft.controller.update_variable('bSimulateSilently',      true);
+                sim(s).TheAircraft.controller.update_variable('kf_x_init',              [1.5 80 30]);
+                sim(s).TheAircraft.controller.update_variable('measurement_noise',      0.4);
+                sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',   Inf);
                 %sim(s).TheAircraft.controller.update_variable('process_noise_q1',var1(j));
                 %sim(s).TheAircraft.controller.update_variable('process_noise_q2',var2(k));
                 %sim(s).TheAircraft.controller.update_variable('process_noise_q3',var3(l));
-                sim(s).TheAircraft.controller.update_variable('process_noise_q1',q1);%0.01);
-                sim(s).TheAircraft.controller.update_variable('process_noise_q2',q2);%0.25);
-                sim(s).TheAircraft.controller.update_variable('process_noise_q3',q3);%0.4);
-                sim(s).TheAircraft.controller.update_variable('pf_K',0.05);
-                sim(s).TheAircraft.controller.update_variable('ukf_alpha',0.1);
-                sim(s).TheAircraft.controller.update_variable('ceiling',1200);
-                sim(s).TheAircraft.controller.update_variable('thermalling_radius',40);
-                sim(s).TheAircraft.controller.update_variable('P_init',diag([2^2,80^2,100^2,100^2]));
-                sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',0.5);
+                sim(s).TheAircraft.controller.update_variable('process_noise_q1',       q1);
+                sim(s).TheAircraft.controller.update_variable('process_noise_q2',       q2);
+                sim(s).TheAircraft.controller.update_variable('process_noise_q3',       q3);
+                sim(s).TheAircraft.controller.update_variable('pf_K',                   0.05);
+                sim(s).TheAircraft.controller.update_variable('ukf_alpha',              0.1);
+                sim(s).TheAircraft.controller.update_variable('ceiling',                1200);
+                sim(s).TheAircraft.controller.update_variable('thermalling_radius',     40);
+                sim(s).TheAircraft.controller.update_variable('P_init',                 diag([2^2,80^2,100^2,100^2]));
+                sim(s).TheAircraft.updraftsensor.covariance = 0.4;
+%                 sim(s).TheAircraft.gradientsensor.covariance = 0.1;
 
                 sim(s).TheAircraft.controller.SetupKalmanFilter(sim(s).execution_frequency);
                 sim(s).currenttime=0;
@@ -169,7 +170,7 @@ for l=1:numel(var3)
                     figure('Name','ResVar');
                     ax(end+1) = subplot_tight(3,1,1,[v_margin h_margin]);
                     plot(data.t',[data.z(:,1)-data.kf.z_exp(:,1) data.z(:,2)-data.kf.z_exp(:,2)]);
-                    title(['WPCase:' num2str(rnd_i) 'posx,y,pathangle:' num2str(rnd_f(1)) num2str(rnd_f(2)) num2str(rnd_f(3))]);
+                    title(['WPCase:' num2str(testcase)]);
                     legend('res_{z1}','res_{z2}');
                     ax(end+1) = subplot_tight(3,1,2,[v_margin h_margin]);
                     plot(data.t',[x_real_glob(1)-data.kf.x(:,1) x_real_glob(2)-data.kf.x(:,2) x_real_glob(3)-data.kf.x_xy_glob(:,1) x_real_glob(4)-data.kf.x_xy_glob(:,2)]);

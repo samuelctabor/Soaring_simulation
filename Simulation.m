@@ -96,22 +96,22 @@ classdef Simulation < handle
             variables.search_pitch_angle =          deg2rad(5.0);
             variables.min_thermal_latch_time=       10;
 
-            variables.floor=                        0;
-            variables.Waypointtol                  =5;
-            variables.min_cruise_time              =5;
-            variables.min_search_time              =5;
-            variables.k_p =                         2.0;
-            variables.k_d =                         0.0;
-            variables.k_i =                         0.01;
+            variables.floor                        = 0;
+            variables.Waypointtol                  = 5;
+            variables.min_cruise_time              = 5;
+            variables.min_search_time              = 5;
+            variables.k_p                          = 2.0;
+            variables.k_d                          = 0.0;
+            variables.k_i                          = 0.01;
+            variables.useRoll                      = false;
 
-            if(obj.visualizeSimulation) obj.axis=axis_to_use; end;
             if(obj.visualizeSimulation)
+                obj.axis=axis_to_use;
                 hold(obj.axis,'on');
                 set(obj.axis, 'CameraViewAngle', get(obj.axis,'CameraViewAngle'));
                 axis(obj.axis,'equal');
             end
-            %obj.axis=gca;
-            t=0;
+            
             grid on;
             
             % initial state covraiance
