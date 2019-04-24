@@ -45,10 +45,15 @@ for l=1:numel(var3)
            
                 %Configure the simulation
                 sim(s) = simOrg;
-                if(testcase == 1) sim(s).TheAircraft.reset(-0,-100,200,9.3,deg2rad(90),sim(s).execution_frequency, Waypoints{testcase},nr_iterations);
-                elseif(testcase == 2) sim(s).TheAircraft.reset(-40,-100,200,9.3,deg2rad(90),sim(s).execution_frequency, Waypoints{testcase},nr_iterations);
-                elseif(testcase == 3) sim(s).TheAircraft.reset(-40,-100,200,9.3,deg2rad(90),sim(s).execution_frequency, Waypoints{testcase},nr_iterations);
-                elseif(testcase < 100) sim(s).TheAircraft.reset(-100,-100,200,9.3,0,sim(s).execution_frequency, Waypoints{testcase},nr_iterations);          
+                
+                if(testcase == 1)
+                    sim(s).TheAircraft.reset(-0,-100,200,9.3,  deg2rad(90),sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
+                elseif(testcase == 2)
+                    sim(s).TheAircraft.reset(-40,-100,200,9.3, deg2rad(90),sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
+                elseif(testcase == 3)
+                    sim(s).TheAircraft.reset(-40,-100,200,9.3, deg2rad(90),sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
+                elseif(testcase < 100)
+                    sim(s).TheAircraft.reset(-100,-100,200,9.3,0,          sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
                 else
                     rnd_f = (rand(3,1)-0.5)*2.0;%rnd_f_s;%
                     rnd_i = randi(numel(Waypoints)); %rnd_i_s;%
@@ -88,9 +93,7 @@ for l=1:numel(var3)
                 sim(s).TheAircraft.controller.update_variable('thermalling_radius',40);
                 sim(s).TheAircraft.controller.update_variable('P_init',diag([2^2,80^2,100^2,100^2]));
                 sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',0.5);
-                
-                sims(s).environment.Thermals(1).radius = 120;
-                
+
                 sim(s).TheAircraft.controller.SetupKalmanFilter(sim(s).execution_frequency);
                 sim(s).currenttime=0;
 
