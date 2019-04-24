@@ -350,9 +350,9 @@ classdef FlightController < handle
                 % Aim at 90* to thermal, plus a bit to widen the turn
                 nav_bearing = atan2(x(4)-Py,x(3)-Px);
                 error = FlightController.wrap360(nav_bearing-pathangle);
-                nav_bearing = nav_bearing - sign(error)*(pi/2+deg2rad(5));
+                nav_bearing = nav_bearing - sign(error)*(pi/2+ (1-dist/rad)*deg2rad(5));
             else     % If outside the circle, aim at tangent
-                nav_bearing = atan2(x(4)-Py,x(3)-Px)+asin(rad/dist);     % Aim for the tangent to the circle
+                nav_bearing = atan2(x(4)-Py,x(3)-Px)+atan(rad/dist);     % Aim for the tangent to the circle
             end
         end
         function nav_bearing = calc_bearing_cruising(posx,posy,destination)
