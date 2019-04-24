@@ -45,13 +45,15 @@ classdef ExtendedKalmanFilter_thermal < handle
             if numel(z)==1
                H = H(1,:);
                ekf.z_exp = z_exp(1);
+               R = ekf.R(1,1);
             else
                ekf.z_exp = z_exp;
+               R = ekf.R;
             end
             
             %Calculate the KALMAN GAIN
             P12=P*H';                                   %cross covariance
-            K=P12*inv(H*P12+ekf.R);                     %Kalman filter gain
+            K=P12*inv(H*P12+R);                     %Kalman filter gain
             
             %Correct the state estimate using the measurement residual.
             ekf.x=x1+K*(z-ekf.z_exp)';

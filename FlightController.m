@@ -155,6 +155,11 @@ classdef FlightController < handle
             
             this.V = V;
             
+            % Check whether to use both updraft and rolling moment.
+            if ~this.variables.useRoll
+                measurements = measurements(1);
+            end
+            
             %Update the Kalman filter
             if this.sm.state==StateMachine.thermalling
                 if (mod(this.filter_iterations,this.filter_skips)==0)
