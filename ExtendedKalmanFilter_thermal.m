@@ -24,7 +24,7 @@ classdef ExtendedKalmanFilter_thermal < handle
             obj.Q=Q;
             obj.R=R;
         end
-        function update(ekf,z,Vxdt,Vydt,yaw,rollparam)
+        function update(ekf,z,Px,Py,Vxdt,Vydt,yaw,rollparam)
             if nargin <=4
                 yaw=0;
                 rollparam=1;
@@ -41,7 +41,7 @@ classdef ExtendedKalmanFilter_thermal < handle
             
             %What measurement do we expect to receive in the estimated
             %state
-            [z_exp,H]=ekf.jacobian_h(x1,yaw,rollparam);
+            [z_exp,H]=ekf.jacobian_h(x1,Px,Py,yaw,rollparam);
             if numel(z)==1
                H = H(1,:);
                ekf.z_exp = z_exp(1);
@@ -72,14 +72,14 @@ classdef ExtendedKalmanFilter_thermal < handle
         end
     end
     methods(Static)
-        function [w,A]=jacobian_h(x,yaw,rollparam)
+        function [w,A]=jacobian_h(x,Px,Py,yaw,rollparam)
             %This function computes the jacobian using equations from
             %analytical derivation of Gaussian updraft distribution
             %This expression gets used lots
-            expon = exp(-(x(3)^2+x(4)^2)/x(2)^2);
-            r = sqrt(x(3)^2+x(4)^2);
+            expon = exp(-((x(3)-Px)^2+(x(4)-Py)^2)/x(2)^2);
+            r = sqrt((x(3)-Px)^2+(x(4)-Py)^2);
             yaw_corr = -(yaw-deg2rad(90));
-            sinAngle = (cos(yaw_corr)*x(3) - sin(yaw_corr)*x(4)) / r;
+            sinAngle = (cos(yaw_corr)*(x(3)-Px) - sin(yaw_corr)*(x(4)-Py)) / r;
             cosroll = 1.0; %Assume roll angle zero
             
             %Expected measurement
@@ -88,14 +88,14 @@ classdef ExtendedKalmanFilter_thermal < handle
                         
             %Elements of the Jacobian
             A(1,1)=expon;
-            A(1,2)=2*x(1)*(x(3)^2+x(4)^2)/x(2)^3*expon;
-            A(1,3)=-2*x(1)*x(3)/x(2)^2*expon;
-            A(1,4)=-2*x(1)*x(4)/x(2)^2*expon;
+            A(1,2)=2*x(1)*((x(3)-Px)^2+(x(4)-Py)^2)/x(2)^3*expon;
+            A(1,3)=-2*x(1)*(x(3)-Px)/x(2)^2*expon;
+            A(1,4)=-2*x(1)*(x(4)-Py)/x(2)^2*expon;
             
             A(2,1) = w(2) / x(1);
-            A(2,2) = 4.0 * rollparam * x(1) * expon * sinAngle * r * (x(2)^2-x(3)^2-x(4)^2) / x(2)^5.0 * cosroll;
-            A(2,3) = 2.0 * rollparam * x(1) * expon / x(2)^2 * (-cos(yaw_corr) + 2.0 / x(2)^2 * x(3) * sinAngle * r) * cosroll; %NOTE: Slightly different than in Pixhawk because x/y inverted and directions changed
-            A(2,4) = 2.0 * rollparam * x(1) * expon / x(2)^2 * (sin(yaw_corr) + 2.0 / x(2)^2 * x(4) * sinAngle * r) * cosroll; %NOTE: Slightly different than in Pixhawk because x/y inverted and directions changed
+            A(2,2) = 4.0 * rollparam * x(1) * expon * sinAngle * r * (x(2)^2-(x(3)-Px)^2-(x(4)-Py)^2) / x(2)^5.0 * cosroll;
+            A(2,3) = 2.0 * rollparam * x(1) * expon / x(2)^2 * (-cos(yaw_corr) + 2.0 / x(2)^2 * (x(3)-Px) * sinAngle * r) * cosroll; %NOTE: Slightly different than in Pixhawk because x/y inverted and directions changed
+            A(2,4) = 2.0 * rollparam * x(1) * expon / x(2)^2 * ( sin(yaw_corr) + 2.0 / x(2)^2 * (x(4)-Py) * sinAngle * r) * cosroll; %NOTE: Slightly different than in Pixhawk because x/y inverted and directions changed
         end
         function [xn,A]=jacobian_f(x,Vxdt,Vydt)
             %Computes new state and jacobian

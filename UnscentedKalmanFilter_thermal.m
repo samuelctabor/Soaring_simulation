@@ -47,7 +47,7 @@ classdef UnscentedKalmanFilter_thermal < handle
                 obj.UKF.Alpha = alpha;
             end
         end
-        function update(obj,z,Vxdt,Vydt,yaw,rollparam)
+        function update(obj,z,Px,Py,Vxdt,Vydt,yaw,rollparam)
             if(obj.Execute==false)
                 return
             end
@@ -65,9 +65,9 @@ classdef UnscentedKalmanFilter_thermal < handle
             [X1,obj.sigma_points] = matlabshared.tracking.internal.calcSigmaPoints(obj.P, obj.x, c);
             
             %Correction Step
-            obj.z_exp = MeasurementFcn(obj.x, yaw, rollparam);
+            obj.z_exp = MeasurementFcn(obj.x, Px, Py, yaw, rollparam);
             obj.residual = z - obj.z_exp;
-            [obj.x, obj.P] = correct(obj.UKF,z,yaw,rollparam); 
+            [obj.x, obj.P] = correct(obj.UKF,z,Px,Py,yaw,rollparam); 
         end
         function reset(obj,x,P)
             %Reset covariance and state.
@@ -91,11 +91,11 @@ function x = StateTransitionFcn(x,Vxdt,Vydt)
          x(4)-Vydt];%+noise(4)];
 end
         
-function z = MeasurementFcn(x, yaw, rollparam)             
-    expon = exp(-(x(3)^2+x(4)^2)/x(2)^2);
-    r = sqrt(x(3)^2+x(4)^2);
+function z = MeasurementFcn(x, Px, Py, yaw, rollparam)
+    expon = exp(-((x(3)-Px)^2+(x(4)-Py)^2)/x(2)^2);
+    r = sqrt((x(3)-Px)^2+(x(4)-Py)^2);
     yaw_corr = -(yaw-deg2rad(90));
-    sinAngle = (cos(yaw_corr)*x(3) - sin(yaw_corr)*x(4)) / r;
+    sinAngle = (cos(yaw_corr)*(x(3)-Px) - sin(yaw_corr)*(x(4)-Py)) / r;
     cosroll = 1.0; %Assume roll angle zero
 
     %Expected measurement

@@ -45,7 +45,7 @@ classdef ParticleFilter_thermal < handle
             obj.PF.MeasurementLikelihoodFcn = @MeasurementLikelihoodFcn;
             initialize(obj.PF, obj.NumParticles, xinit, Pinit);
         end
-        function update(obj,z,Vxdt,Vydt,yaw,rollparam)
+        function update(obj,z,Px,Py,Vxdt,Vydt,yaw,rollparam)
             if(obj.Execute==false)
                 return
             end
@@ -57,7 +57,7 @@ classdef ParticleFilter_thermal < handle
             
             % Particle filtering steps
             [obj.x,obj.P] = predict(obj.PF,Vxdt,Vydt,obj.Q);
-            [obj.x,obj.P] = correct(obj.PF,z,yaw,rollparam,obj.R);
+            [obj.x,obj.P] = correct(obj.PF,z,Px,Py,yaw,rollparam,obj.R);
             obj.x = getStateEstimate(obj.PF);
             
             % Additional particle filtering step: Roughening
@@ -66,7 +66,7 @@ classdef ParticleFilter_thermal < handle
             %Just calculate the following variables as debug output. 
             % Note: %The z_exp calculate from the estimated state x is NOT the average z_exp 
             % of all particles because the measurement function is nonlinear!
-            obj.z_exp = MeasurementFcn(obj.x, yaw, rollparam);
+            obj.z_exp = MeasurementFcn(obj.x, Px, Py, yaw, rollparam);
             obj.residual = z - obj.z_exp;
         end
         function reset(obj,xinit,Pinit)
@@ -88,16 +88,16 @@ function new_particles = StateTransitionFcn(PF, particles, Vxdt, Vydt, Q)
     new_particles(:,4) = particles(:,4)-Vydt + sqrt(Q(4,4)) * randn(size(particles,1),1);
 end
 
-function z_exp = MeasurementFcn(x, yaw, rollparam)
-    expon = exp(-(x(:,3).^2+x(:,4).^2)./x(:,2).^2);
-    r = sqrt(x(:,3).^2+x(:,4).^2);
+function z = MeasurementFcn(x, Px, Py, yaw, rollparam)
+    expon = exp(-((x(3)-Px)^2+(x(4)-Py)^2)/x(2)^2);
+    r = sqrt((x(3)-Px)^2+(x(4)-Py)^2);
     yaw_corr = -(yaw-deg2rad(90));
-    sinAngle = (cos(yaw_corr)*x(:,3) - sin(yaw_corr)*x(:,4)) ./ r;
+    sinAngle = (cos(yaw_corr)*(x(3)-Px) - sin(yaw_corr)*(x(4)-Py)) / r;
     cosroll = 1.0; %Assume roll angle zero
 
     %Expected measurement
-    z_exp(:,1) = x(:,1).*expon;
-    z_exp(:,2) = -2.0 * rollparam .* r .* z_exp(:,1) ./ x(:,2).^2 .* sinAngle;
+    z(1) = x(1)*expon;% + noise (1);
+    z(2) = -2.0 * rollparam * r * z(1) / x(2)^2 * sinAngle;% + noise(2);
 end
 
 function likelihood = MeasurementLikelihoodFcn(PF, particles, z, yaw, rollparam,R)

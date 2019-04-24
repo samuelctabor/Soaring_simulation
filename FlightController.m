@@ -158,16 +158,18 @@ classdef FlightController < handle
             if this.sm.state==StateMachine.thermalling
                 if (mod(this.filter_iterations,this.filter_skips)==0)
                     % Only execute Kalman filter every x-th (filter_skips) iteration
-                    this.kf.update(measurements,this.posx-this.prev_posx,this.posy-this.prev_posy,pathangle,this.variables.roll_param);
+                    this.kf.update(measurements,this.posx,this.posy,0,0,pathangle,this.variables.roll_param);
 
                     this.prev_posx = this.posx;
                     this.prev_posy = this.posy;
                     this.prev_posz = this.posz;
                     
                     %Estimated global position of thermal and sigma-points/particles
-                    this.est_thermal_pos = [posx+this.kf.x(3),posy+this.kf.x(4)];
-                    if(this.KFtype == 2) this.sigma_points_glob = [this.kf.x, this.kf.sigma_points]+ [0 0 posx posy]';
-                    elseif(this.KFtype == 3) this.sigma_points_glob = this.kf.PF.Particles' + [0 0 posx posy]';
+                    this.est_thermal_pos = [this.kf.x(3),this.kf.x(4)];
+                    if(this.KFtype == 2)
+                        this.sigma_points_glob = [this.kf.x, this.kf.sigma_points];
+                    elseif(this.KFtype == 3)
+                        this.sigma_points_glob = this.kf.PF.Particles';
                     end
 
                     this.thermal_estimate_updated = true;
@@ -220,7 +222,7 @@ classdef FlightController < handle
                         %We reset it to 10m ahead of the aircraft, but give
                         %it a high covariance P so it will adjust quickly.
                         this.print('Filter reset');
-                        this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);cos(this.pathangle)*this.variables.kf_x_init(3);sin(this.pathangle)*this.variables.kf_x_init(3)],this.variables.kf_P_init);
+                        this.kf.reset([this.variables.kf_x_init(1);this.variables.kf_x_init(2);this.posx + cos(this.pathangle)*this.variables.kf_x_init(3); this.posy + sin(this.pathangle)*this.variables.kf_x_init(3)],this.variables.kf_P_init);
                         this.est_thermal_pos = [this.posx+this.kf.x(3),this.posy+this.kf.x(4)];
                         this.sm.set(StateMachine.thermalling,t);
                         this.heading_controller.reset_I();
@@ -259,10 +261,10 @@ classdef FlightController < handle
                             this.print('Filter reset');
                             this.kf.reset([this.variables.kf_x_init(1);...
                                            this.variables.kf_x_init(2);...
-                                           cosd(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3);...
-                                           sind(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3)],...
+                                           this.posx + cosd(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3);...
+                                           this.posy + sind(rad2deg(this.pathangle+this.variables.kf_x_init_angle_offset))*this.variables.kf_x_init(3)],...
                                            this.variables.kf_P_init); %Note: cosd(rad2deg... is used to circumvent mathematical precision problems, e.g. cos(pi()/2)!=0 in matlab
-                            this.est_thermal_pos = [this.posx+this.kf.x(3),this.posy+this.kf.x(4)];
+                            this.est_thermal_pos = [this.kf.x(3),this.kf.x(4)];
                             %obj.sm.set(StateMachine.investigating_straight,t)
                             this.sm.set(StateMachine.thermalling,t);
                             this.heading_controller.reset_I();
@@ -309,7 +311,7 @@ classdef FlightController < handle
                 this.nav_bearing = angle - ((pi/2) + this.variables.search_pitch_angle);
             elseif (this.sm.state==StateMachine.thermalling && this.ThermalTrackingActive==true)
                 %Orbit the thermal centre
-                this.nav_bearing=this.calc_bearing_thermalling(this.kf.x,this.pathangle,this.variables);
+                this.nav_bearing=this.calc_bearing_thermalling(this.kf.x,this.posx, this.posy,this.pathangle,this.variables);
             else %Executed for state StateMachine.cruising and when StateMachine.thermalling && ThermalTrackingActive==false
                 %Navigate towards waypoint
                 wp=this.Waypoints(this.currentWaypoint,:);
@@ -334,16 +336,16 @@ classdef FlightController < handle
     
     methods (Static)
         
-        function nav_bearing = calc_bearing_thermalling(x, pathangle, variables)
+        function nav_bearing = calc_bearing_thermalling(x, Px, Py, pathangle, variables)
             rad = variables.thermalling_radius;
-            dist = norm([x(3),x(4)]);
+            dist = norm([x(3)-Px,x(4)-Py]);
             if dist < rad
                 % Aim at 90* to thermal, plus a bit to widen the turn
-                nav_bearing = atan2(x(4),x(3));
+                nav_bearing = atan2(x(4)-Py,x(3)-Px);
                 error = FlightController.wrap360(nav_bearing-pathangle);
                 nav_bearing = nav_bearing - sign(error)*(pi/2+deg2rad(5));
             else     % If outside the circle, aim at tangent
-                nav_bearing = atan2(x(4),x(3))+asin(rad/dist);     % Aim for the tangent to the circle
+                nav_bearing = atan2(x(4)-Py,x(3)-Px)+asin(rad/dist);     % Aim for the tangent to the circle
             end
         end
         function nav_bearing = calc_bearing_cruising(posx,posy,pathangle,destination, variables)
