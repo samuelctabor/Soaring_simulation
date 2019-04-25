@@ -103,7 +103,6 @@ classdef Simulation < handle
             variables.k_p                          = 2.0;
             variables.k_d                          = 0.0;
             variables.k_i                          = 0.01;
-            variables.useRoll                      = false;
 
             if(obj.visualizeSimulation)
                 obj.axis=axis_to_use;
