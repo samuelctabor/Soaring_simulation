@@ -321,7 +321,7 @@ classdef FlightController < handle
                     this.nav_bearing = atan2(wp(2)-this.posy,wp(1)-this.posx);
                 elseif(wp(3)==1) %Loitering WP
                     xLoiter = [0 0 wp(1)-this.posx wp(2)-this.posy];
-                    this.nav_bearing=this.calc_bearing_thermalling(xLoiter,this.pathangle,this.variables);
+                    this.nav_bearing=this.calc_bearing_thermalling(xLoiter,this.posx, this.posy, this.pathangle,this.variables);
                 end
             end
         end

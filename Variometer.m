@@ -13,7 +13,7 @@ classdef Variometer < handle
         end
         function update(obj,exact_updraft)
             %Add noise
-            obj.estimated_updraft = exact_updraft+obj.covariance*randn; %TODO check; Should be wrong, see other sensor
+            obj.estimated_updraft = exact_updraft+sqrt(obj.covariance)*randn; %TODO check; Should be wrong, see other sensor
         end
     end
     

@@ -56,7 +56,7 @@ classdef Simulation < handle
                 size = varargin{7};
             else
                 size = 100;
-            end
+            end   
 
             if(obj.visualizeSimulation) set(axis_to_use,'ButtonDownFcn',@obj.axis_clicked_fcn); end;
             
@@ -103,6 +103,17 @@ classdef Simulation < handle
             variables.k_p                          = 2.0;
             variables.k_d                          = 0.0;
             variables.k_i                          = 0.01;
+            
+            if nargin>=8
+                inputVars = varargin{8};
+                assert(isstruct(inputVars),'8th argument should be struct of variables');
+                % Allow specification of structure of variables.
+                vars = fieldnames(inputVars);
+                for iV=1:length(vars)
+                    assert(isfield(variabes,vars{iV}),'Unknown variable %s', vars{iV});
+                    variables.(vars{iV}) = inputVars.(vars{iV});
+                end
+            end
 
             if(obj.visualizeSimulation)
                 obj.axis=axis_to_use;

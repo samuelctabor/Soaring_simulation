@@ -2,30 +2,35 @@ close all
 clear all
 
 % SETUP SIMULATION HERE
-useParallelSimulation = true;               % Note: you have to manually enable either the for- or the parfor-loop below!
-testcase = 100;                             % Testcase Definition. Note that testcase=100 will use random waypoints.
+useParallelSimulation = false;               % Note: you have to manually enable either the for- or the parfor-loop below!
+displayPlots = false && useParallelSimulation;
+testcase = 3;                             % Testcase Definition. Note that testcase=100 will use random waypoints.
 Waypoints{1} = [-0,100,0; 0,0,1];                                               % testcase=1: Pass through thermal core (bottom -> top)
 Waypoints{2} = [-40,100,0; 0,0,1];                                              % testcase=2: Tangential pass of thermal (bottom -> top)
 Waypoints{3} = [-40,100,0; 0,0,1];                                              % testcase=3: Tangential pass of thermal (bottom -> top), but initialized on wrong side
 Waypoints{4} = [-100,100,0; -100,-100,0];                                       % testcase=4: Traverse
 Waypoints{5} = [-50,100,0; 50,-100,0 ; 150,100,0;-50,100,0; 50,-100,0 ;];       % testcase=5: Zick-Zack
 Waypoints{6} = [-100,100,0; -0,-50,1];                                          % testcase=6: Straight line up then open loop loiter near center
-rndsamples = 30;                            % Amount of random samples to use        
-x_real_glob = [3, 120, 0, 0];               % Define the "ground truth" or real thermal values here!
+rndsamples = 2;                            % Amount of random samples to use        
+x_real_glob = [2, 40, 0, 0];               % Define the "ground truth" or real thermal values here!
 
-var1 = 1;%0.000:0.005:0.015;                %Define the variables (var1,2,3) to loop/optimze over here (scalar->no loop)
+var1 = [1, 2];%0.000:0.005:0.015;                %Define the variables (var1,2,3) to loop/optimze over here (scalar->no loop)
 var2 = 1;%0.1:0.1:0.4;
 var3 = 1;%0.1:0.1:0.4;
 
 % Application init - You don't have to modify this section
 set(0,'defaultTextInterpreter','tex');
 scrsz = get(groot,'ScreenSize');
-if(~useParallelSimulation) figure('Name','Sim','Position',[200 scrsz(4)/4 scrsz(3)/3 2*scrsz(4)/3]); end;
-simOrg = Simulation(gca,~useParallelSimulation,0,0,3,120);
-bSilent=true;
+
+if displayPlots
+    figure('Name','Sim','Position',[200 scrsz(4)/4 scrsz(3)/3 2*scrsz(4)/3]);
+end
+
+simOrg = Simulation(gca,displayPlots,0,0,3,120);
 nr_iterations = 100*simOrg.execution_frequency;
 results = cell(numel(var3), numel(var2), numel(var1));
 performance_val = zeros(numel(var3), numel(var2), numel(var1));
+
 if(useParallelSimulation)
     gcp;
 end
@@ -40,8 +45,8 @@ for l=1:numel(var3)
             residuals = zeros(rndsamples,nr_iterations,4);
             residuals_accum = zeros(rndsamples,4);
             
-            %for s=1:rndsamples % Inner loop: Random analysis. NOTE: USE THIS FOR NON-PARALELL SIMULATION
-            parfor s=1:rndsamples % Inner loop: Random analysis. NOTE: USE THIS FOR PARALELL SIMULATION
+            for s=1:rndsamples % Inner loop: Random analysis. NOTE: USE THIS FOR NON-PARALELL SIMULATION
+%             parfor s=1:rndsamples % Inner loop: Random analysis. NOTE: USE THIS FOR PARALELL SIMULATION
            
                 %Configure the simulation
                 sim(s) = simOrg;
@@ -63,7 +68,8 @@ for l=1:numel(var3)
                 % Configure the filters - load optimized Pinit and process
                 % noise values (Note: These are only optimal for a  specific xinit, 
                 % process and measurement noise and and overall problem setup!)
-                sim(s).TheAircraft.controller.KFtype = 1;
+                sim(s).TheAircraft.controller.KFtype = var1(j);
+%                 sim(s).TheAircraft.controller.KFtype = 1;
                 if(sim(s).TheAircraft.controller.KFtype == 1) %EKF
                     sim(s).TheAircraft.controller.update_variable('kf_P_init',diag([100^2 100^2 140^2 140^2]));
                     q1 = 0.01; q2 = 0.25; q3 = 0.25; %opt. for R(2,2)=inf
@@ -78,9 +84,9 @@ for l=1:numel(var3)
                 sim(s).TheAircraft.controller.ThermalTrackingActive = true;
                 sim(s).TheAircraft.controller.update_variable('SaveReducedHistory',     false);
                 sim(s).TheAircraft.controller.update_variable('bSimulateSilently',      true);
-                sim(s).TheAircraft.controller.update_variable('kf_x_init',              [1.5 80 30]);
+                sim(s).TheAircraft.controller.update_variable('kf_x_init',              [1.5 80 0]);
                 sim(s).TheAircraft.controller.update_variable('measurement_noise',      0.4);
-                sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',   Inf);
+                sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',   100);
                 %sim(s).TheAircraft.controller.update_variable('process_noise_q1',var1(j));
                 %sim(s).TheAircraft.controller.update_variable('process_noise_q2',var2(k));
                 %sim(s).TheAircraft.controller.update_variable('process_noise_q3',var3(l));
@@ -92,8 +98,10 @@ for l=1:numel(var3)
                 sim(s).TheAircraft.controller.update_variable('ceiling',                1200);
                 sim(s).TheAircraft.controller.update_variable('thermalling_radius',     40);
                 sim(s).TheAircraft.controller.update_variable('P_init',                 diag([2^2,80^2,100^2,100^2]));
-                sim(s).TheAircraft.updraftsensor.covariance = 0.4;
-%                 sim(s).TheAircraft.gradientsensor.covariance = 0.1;
+                sim(s).TheAircraft.controller.update_variable('min_cruise_time',        10);
+                sim(s).TheAircraft.controller.update_variable('min_cruise_time',        10);
+                sim(s).TheAircraft.controller.update_variable('min_thermal_latch_time', 20);
+                sim(s).TheAircraft.updraftsensor.covariance = 0.16;
 
                 sim(s).TheAircraft.controller.SetupKalmanFilter(sim(s).execution_frequency);
                 sim(s).currenttime=0;
@@ -136,16 +144,17 @@ for l=1:numel(var3)
                     v_margin = 0.05;
 
                     %3D positions and thermal estimates?
-%                     figure('Name','3D Pos');
-%                     plot3(data.p(:,1),data.p(:,2),data.p(:,3));
-%                     hold all
-%                     plot3(data.kf.x_xy_glob(:,1), data.kf.x_xy_glob(:,2), zeros(size(data.kf.x_xy_glob(:,2))));
-%                     legend('Airplane pos','Estimated Thermal Pos');
-%                     plot3(x_real_glob(3),x_real_glob(4),0,'o','MarkerSize',20);
-%                     %contour(handles.simulation.environment.x,handles.simulation.environment.y,handles.simulation.environment.z);
-%                     xlabel('x');
-%                     ylabel('y');
-%                     zlabel('z');
+                    figure('Name','3D Pos');
+                    plot3(data.p(:,1),data.p(:,2),data.p(:,3));
+                    hold all
+                    plot3(data.kf.x_xy_glob(:,1), data.kf.x_xy_glob(:,2), zeros(size(data.kf.x_xy_glob(:,2))));
+                    legend('Airplane pos','Estimated Thermal Pos');
+                    plot3(x_real_glob(3),x_real_glob(4),0,'o','MarkerSize',20);
+                    %contour(handles.simulation.environment.x,handles.simulation.environment.y,handles.simulation.environment.z);
+                    xlabel('x');
+                    ylabel('y');
+                    zlabel('z');
+                    axis equal;
 
                     %States and measurements
                     figure('Name','States');
@@ -185,11 +194,18 @@ for l=1:numel(var3)
                 end
             end %loop over (s)
             
+            % Calculate centring times.% Converged when the residual falls below 50% radius for the last time.
+             positionEstimateResidual = squeeze(sqrt(residuals(:,:,3).^2 + residuals(:,:,4).^2))';
+            [~, convergeIdx] = max(flipud(positionEstimateResidual)>x_real_glob(2)/2, [], 1);
+            convergeIdx = size(positionEstimateResidual,1) - convergeIdx + 1;
+            convergeTime = sim(1).TheAircraft.History.t(convergeIdx);
+
             %Store in result arrays
             results{l,k,j}.performance.avrgRes = avrgRes / rndsamples;%TODO check
             results{l,k,j}.History = sim(end).TheAircraft.History;
             results{l,k,j}.settings.KFtype = sim(end).TheAircraft.controller.KFtype;
             results{l,k,j}.settings.q = [sim(end).TheAircraft.controller.variables.process_noise_q1, sim(end).TheAircraft.controller.variables.process_noise_q2, sim(end).TheAircraft.controller.variables.process_noise_q3];
+            results{l,k,j}.centringTimes = convergeTime;
             performance_val(l,k,j) = results{l,k,j}.performance.avrgRes;
             fprintf('***** Average (over all %u random samples) accumulated residual: %f *****\n',rndsamples, results{l,k,j}.performance.avrgRes);
         end %loop over (j)
@@ -210,7 +226,7 @@ xlabel('Time [s]');
 legend('res_{W}','res_{R}','res_{x}','res_{y}');
 
 %% Plot & compare: Residuals of all simulation runs combined in 3D Plot
-if(1 && ndims(performance_val)==3)
+if(0 && ndims(performance_val)==3)
     [X,Y,Z] = meshgrid(var3,var2,var1);
     figure('Name','PerformanceComparison');
 %     for l = 1:numel(var3)
@@ -240,3 +256,7 @@ if(1 && ndims(performance_val)==3)
     %slice(x, y, z, temp, xslice, yslice, zslice)
 end
 
+if (1) % Histogram of centring times.
+    figure,hist([results{1}.centringTimes; results{2}.centringTimes]',10)
+    legend('EKF','UKF');
+end
