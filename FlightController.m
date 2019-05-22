@@ -108,6 +108,8 @@ classdef FlightController < handle
             this.search_centre = [posx,posy+(5)];
             this.est_thermal_pos = [0,0];
 
+            this.KFtype = variables.KFtype;
+            
             SetupKalmanFilter(this, execution_frequency);
         end
         
@@ -371,9 +373,10 @@ classdef FlightController < handle
             end
         end
         function vmc=MacCready(alt,sinkrate)
-            h = [0 50 100 150 200 250 300 350 400];
-            v = 2.0*(h/400); %.^0.3;
-            vmc = interp1(h,v,alt,'linear') + sinkrate;
+%             h = [0 50 100 150 200 250 300 350 400];
+%             v = 2.0*(h/400); %.^0.3;
+%             vmc = interp1(h,v,alt,'linear') + sinkrate;
+              vmc = 0.0;
         end
     end
 end

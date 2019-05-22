@@ -39,7 +39,7 @@ classdef GaussianThermal
             r = sqrt((GT.thermalx-posx)^2+(GT.thermaly-posy)^2);
             sinAngle = (cos(yaw_corr)*(GT.thermalx-posx) - sin(yaw_corr)*(GT.thermaly-posy)) / r;
             localgradient = -2.0 * r * z / GT.radius^2 * sinAngle; 
-        end
+        end 
         function h=Display(GT,axis)  
             %Unused
             i=1;
@@ -48,11 +48,11 @@ classdef GaussianThermal
                 xc(i)=GT.radius*cos(th)+GT.thermalx;
                 yc(i)=GT.radius*sin(th)+GT.thermaly;
                 i=i+1;
-
             end
+            
             xt=-2*GT.radius:2*GT.radius;
             for i=1:length(xt)
-                f(i) = GT.ExactMeasurement(xt(i),0);
+                f(i) = GT.ExactMeasurement(xt(i),0,0);
             end
 
             plot(axis,GT.thermalx,GT.thermaly,'ro');

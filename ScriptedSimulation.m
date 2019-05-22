@@ -1,9 +1,9 @@
 close all
-clear all
+clear
 
 % SETUP SIMULATION HERE
 useParallelSimulation = false;               % Note: you have to manually enable either the for- or the parfor-loop below!
-displayPlots = false && useParallelSimulation;
+displayPlots = false && ~useParallelSimulation;
 testcase = 3;                             % Testcase Definition. Note that testcase=100 will use random waypoints.
 Waypoints{1} = [-0,100,0; 0,0,1];                                               % testcase=1: Pass through thermal core (bottom -> top)
 Waypoints{2} = [-40,100,0; 0,0,1];                                              % testcase=2: Tangential pass of thermal (bottom -> top)
@@ -11,7 +11,7 @@ Waypoints{3} = [-40,100,0; 0,0,1];                                              
 Waypoints{4} = [-100,100,0; -100,-100,0];                                       % testcase=4: Traverse
 Waypoints{5} = [-50,100,0; 50,-100,0 ; 150,100,0;-50,100,0; 50,-100,0 ;];       % testcase=5: Zick-Zack
 Waypoints{6} = [-100,100,0; -0,-50,1];                                          % testcase=6: Straight line up then open loop loiter near center
-rndsamples = 2;                            % Amount of random samples to use        
+rndsamples = 50;                            % Amount of random samples to use        
 x_real_glob = [2, 40, 0, 0];               % Define the "ground truth" or real thermal values here!
 
 var1 = [1, 2];%0.000:0.005:0.015;                %Define the variables (var1,2,3) to loop/optimze over here (scalar->no loop)
@@ -25,9 +25,8 @@ scrsz = get(groot,'ScreenSize');
 if displayPlots
     figure('Name','Sim','Position',[200 scrsz(4)/4 scrsz(3)/3 2*scrsz(4)/3]);
 end
-
-simOrg = Simulation(gca,displayPlots,0,0,3,120);
-nr_iterations = 100*simOrg.execution_frequency;
+execution_frequency = 20;
+nr_iterations = 100*execution_frequency;
 results = cell(numel(var3), numel(var2), numel(var1));
 performance_val = zeros(numel(var3), numel(var2), numel(var1));
 
@@ -48,64 +47,64 @@ for l=1:numel(var3)
             for s=1:rndsamples % Inner loop: Random analysis. NOTE: USE THIS FOR NON-PARALELL SIMULATION
 %             parfor s=1:rndsamples % Inner loop: Random analysis. NOTE: USE THIS FOR PARALELL SIMULATION
            
-                %Configure the simulation
-                sim(s) = simOrg;
+                variables.SaveReducedHistory= false;
+                variables.bSimulateSilently=  ~displayPlots;
+                variables.kf_x_init=          [1.5 80 0];
+                variables.measurement_noise=  0.4;
+                variables.measurement_noise_z2=100;
+                variables.actual_noise     = 0.4;
+                variables.actual_noise_z2     = 0.0;
+                variables.pf_K= 0.05;
+                variables.ukf_alpha=0.1;
+                variables.ceiling=1200;
+                variables.thermalling_radius= 40;
+                variables.min_cruise_time = 10;
+                variables.min_cruise_time = 10;
+                variables.min_thermal_latch_time = 20;
+                variables.KFtype = var1(j);
+                variables.acWPs = Waypoints{testcase};
                 
-                if(testcase == 1)
-                    sim(s).TheAircraft.reset(-0,-100,200,9.3,  deg2rad(90),sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
-                elseif(testcase == 2)
-                    sim(s).TheAircraft.reset(-40,-100,200,9.3, deg2rad(90),sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
-                elseif(testcase == 3)
-                    sim(s).TheAircraft.reset(-40,-100,200,9.3, deg2rad(90),sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
-                elseif(testcase < 100)
-                    sim(s).TheAircraft.reset(-100,-100,200,9.3,0,          sim(s).execution_frequency, Waypoints{testcase}, nr_iterations);
-                else
-                    rnd_f = (rand(3,1)-0.5)*2.0;%rnd_f_s;%
-                    rnd_i = randi(numel(Waypoints)); %rnd_i_s;%
-                    sim(s).TheAircraft.reset(rnd_f(1)*sim(s).environment.xlim(2),rnd_f(2)*sim(s).environment.ylim(2),200,9.3,rnd_f(3)*pi(),sim(s).execution_frequency, Waypoints{rnd_i},nr_iterations);
-                end
-
                 % Configure the filters - load optimized Pinit and process
                 % noise values (Note: These are only optimal for a  specific xinit, 
                 % process and measurement noise and and overall problem setup!)
-                sim(s).TheAircraft.controller.KFtype = var1(j);
-%                 sim(s).TheAircraft.controller.KFtype = 1;
-                if(sim(s).TheAircraft.controller.KFtype == 1) %EKF
-                    sim(s).TheAircraft.controller.update_variable('kf_P_init',diag([100^2 100^2 140^2 140^2]));
-                    q1 = 0.01; q2 = 0.25; q3 = 0.25; %opt. for R(2,2)=inf
-                elseif(sim(s).TheAircraft.controller.KFtype == 2) %UKF
-                    sim(s).TheAircraft.controller.update_variable('kf_P_init',diag([0.5^2 20^2 30^2 30^2]));
-                    q1 = 0.01; q2 = 0.25; q3 = 0.4;
-                elseif(sim(s).TheAircraft.controller.KFtype == 3) %PF
-                    sim(s).TheAircraft.controller.update_variable('kf_P_init',diag([2^2 80^2 140^2 140^2]));
-                    q1 = 0.008; q2 = 0.15; q3 = 0.25;
+                switch variables.KFtype
+                    case 1 %EKF
+                        variables.kf_P_init = diag([100^2 100^2 140^2 140^2]);
+                        variables.process_noise_q1 = 0.01;
+                        variables.process_noise_q2 = 0.25;
+                        variables.process_noise_q3 = 0.25; %opt. for R(2,2)=inf
+                    case 2 %UKF
+                        variables.kf_P_init = diag([0.5^2 20^2 30^2 30^2]);
+                        variables.process_noise_q1 = 0.01;
+                        variables.process_noise_q2 = 0.25;
+                        variables.process_noise_q3 = 0.4;
+                    case 3 %PF
+                        variables.kf_P_init = diag([2^2 80^2 140^2 140^2]);
+                        variables.process_noise_q1 = 0.008;
+                        variables.process_noise_q2 = 0.15;
+                        variables.process_noise_q3 = 0.25;
+                end
+
+                if(testcase == 1)
+                    variables.acInitState = [-0,-100,200,9.3,  deg2rad(90)];
+                elseif(testcase == 2)
+                    variables.acInitState = [-40,-100,200,9.3, deg2rad(90)];
+                elseif(testcase == 3)
+                    variables.acInitState = [-40,-100,200,9.3, deg2rad(90)];
+                elseif(testcase < 100)
+                    variables.acInitState = [-100,-100,200,9.3,0];
+                else
+                    rnd_f = (rand(3,1)-0.5)*2.0;%rnd_f_s;%
+                    rnd_i = randi(numel(Waypoints)); %rnd_i_s;%
+                    variables.acInitState = [rnd_f(1)*sim(s).environment.xlim(2),rnd_f(2)*sim(s).environment.ylim(2),200,9.3,rnd_f(3)*pi()];
                 end
                 
-                sim(s).TheAircraft.controller.ThermalTrackingActive = true;
-                sim(s).TheAircraft.controller.update_variable('SaveReducedHistory',     false);
-                sim(s).TheAircraft.controller.update_variable('bSimulateSilently',      true);
-                sim(s).TheAircraft.controller.update_variable('kf_x_init',              [1.5 80 0]);
-                sim(s).TheAircraft.controller.update_variable('measurement_noise',      0.4);
-                sim(s).TheAircraft.controller.update_variable('measurement_noise_z2',   100);
-                %sim(s).TheAircraft.controller.update_variable('process_noise_q1',var1(j));
-                %sim(s).TheAircraft.controller.update_variable('process_noise_q2',var2(k));
-                %sim(s).TheAircraft.controller.update_variable('process_noise_q3',var3(l));
-                sim(s).TheAircraft.controller.update_variable('process_noise_q1',       q1);
-                sim(s).TheAircraft.controller.update_variable('process_noise_q2',       q2);
-                sim(s).TheAircraft.controller.update_variable('process_noise_q3',       q3);
-                sim(s).TheAircraft.controller.update_variable('pf_K',                   0.05);
-                sim(s).TheAircraft.controller.update_variable('ukf_alpha',              0.1);
-                sim(s).TheAircraft.controller.update_variable('ceiling',                1200);
-                sim(s).TheAircraft.controller.update_variable('thermalling_radius',     40);
-                sim(s).TheAircraft.controller.update_variable('P_init',                 diag([2^2,80^2,100^2,100^2]));
-                sim(s).TheAircraft.controller.update_variable('min_cruise_time',        10);
-                sim(s).TheAircraft.controller.update_variable('min_cruise_time',        10);
-                sim(s).TheAircraft.controller.update_variable('min_thermal_latch_time', 20);
+                % Set up simulation.
+                sim(s) = Simulation(gca,displayPlots,0,0,3,120,[],variables);
+                sim(s).execution_frequency = execution_frequency;
                 sim(s).TheAircraft.updraftsensor.covariance = 0.16;
-
-                sim(s).TheAircraft.controller.SetupKalmanFilter(sim(s).execution_frequency);
-                sim(s).currenttime=0;
-
+                sim(s).TheAircraft.controller.ThermalTrackingActive = true;
+                
                 %Innermost loop - actual simulation run.
                 for i = 1:nr_iterations
                     bSilent=true;
@@ -117,10 +116,10 @@ for l=1:numel(var3)
                 end
 
                 %Calculate performance metric(s)
-                residuals(s,:,:) = [sim(s).TheAircraft.History.kf.x(:,1)- x_real_glob(1),...
-                    sim(s).TheAircraft.History.kf.x(:,2)- x_real_glob(2),...
-                    sim(s).TheAircraft.History.kf.x_xy_glob(:,1)- x_real_glob(3),...
-                    sim(s).TheAircraft.History.kf.x_xy_glob(:,2)- x_real_glob(4)];
+                residuals(s,:,:) = [sim(s).TheAircraft.History.kf.x(:,1)        - x_real_glob(1),...
+                                    sim(s).TheAircraft.History.kf.x(:,2)        - x_real_glob(2),...
+                                    sim(s).TheAircraft.History.kf.x_xy_glob(:,1)- x_real_glob(3),...
+                                    sim(s).TheAircraft.History.kf.x_xy_glob(:,2)- x_real_glob(4)];
                 residuals_accum(s,:) = squeeze(sum(abs(residuals(s,:,:)),2)) ./ [x_real_glob(1), x_real_glob(2), x_real_glob(2), x_real_glob(2)]';
                 avrgRes = avrgRes+sum(residuals_accum(s,:));
                 
@@ -218,7 +217,7 @@ figure('Name','Average residuuals');
 idx = find(GlobalResiduals_count == rndsamples);
 GlobalResiduals = GlobalResiduals / rndsamples;
 yyaxis left; 
-time = (1:nr_iterations)/simOrg.execution_frequency;
+time = (1:nr_iterations)/execution_frequency;
 plot(time(idx)',GlobalResiduals(idx,1)); ylim([0 x_real_glob(1)]);
 yyaxis right; plot(time(idx)',[GlobalResiduals(idx,2) GlobalResiduals(idx,3) GlobalResiduals(idx,4)]); ylim([0 max(x_real_glob(2),x_real_glob(3))]);
 %yyaxis right ; plot(data.t',data.z(:,2)-data.kf.z_exp(:,2));
