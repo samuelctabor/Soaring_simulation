@@ -25,7 +25,7 @@ classdef ExtendedKalmanFilter_thermal < handle
             obj.R=R;
         end
         function update(ekf,z,Px,Py,Vxdt,Vydt,yaw,rollparam)
-            if nargin <=4
+            if nargin <8
                 yaw=0;
                 rollparam=1;
             end
@@ -57,6 +57,11 @@ classdef ExtendedKalmanFilter_thermal < handle
             
             %Correct the state estimate using the measurement residual.
             ekf.x=x1+K*(z-ekf.z_exp)';
+            
+            % Make sure R stays positive.
+            if (ekf.x(2)<0)
+                ekf.x(2) = -ekf.x(2);
+            end
             
             ekf.residual=(z-ekf.z_exp);
             %fprintf('%f %f \n',mov(3),mov(4));
