@@ -59,8 +59,8 @@ classdef ExtendedKalmanFilter_thermal < handle
             ekf.x=x1+K*(z-ekf.z_exp)';
             
             % Make sure R stays positive.
-            if (ekf.x(2)<0)
-                ekf.x(2) = -ekf.x(2);
+            if (ekf.x(2)<40)
+                ekf.x(2) = 40;
             end
             
             ekf.residual=(z-ekf.z_exp);
